@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Sequence Climber — v2 — 2026-11-01: lower default range (A2-A4); up 11 half steps and back down; count-off then new random string; average note distance slider; Steady reference tone default -->
+<!-- Sequence Climber — v2 — 2026-11-01: lower default range (A2-A4); up 11 half steps and back down; count-off then new random string; average note distance slider; Steady reference tone default; always opens on defaults -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -187,11 +187,15 @@ const INTERVALS = [["Minor 2nd (half step)",1],["Major 2nd (whole step)",2],["Mi
 // fill selects
 SHARP.forEach((n,i)=>$("key").add(new Option(i===0?"C":`${SHARP[i]}${SHARP[i]!==FLAT[i]?" / "+FLAT[i]:""}`, i)));
 Object.keys(SCALES).forEach(s=>$("scale").add(new Option(s,s)));
-$("scale").value="Chromatic";
 INTERVALS.forEach(([n,v])=>$("interval").add(new Option(n,v)));
-$("interval").value="1";
 for(let m=36;m<=96;m++){ const nm=SHARP[m%12]+(Math.floor(m/12)-1); $("low").add(new Option(nm,m)); $("high").add(new Option(nm,m)); }
-$("low").value="45"; $("high").value="69";
+// Always open on this version's defaults, not settings a browser restored from an older visit
+function applyDefaults(){
+  try{ $("opts").reset(); }catch(e){}
+  $("scale").value="Chromatic"; $("interval").value="1"; $("key").value="0";
+  $("low").value="45"; $("high").value="69";
+}
+applyDefaults();
 const INAMES=["","half step","whole step","minor 3rd","major 3rd","4th","tritone","5th","minor 6th","major 6th","minor 7th","major 7th","octave"];
 function leapLabel(){ const v=+$("leap").value; $("leapVal").textContent=`about ${v} semitone${v>1?"s":""} (${INAMES[v]})`; }
 leapLabel(); $("leap").addEventListener("input",leapLabel);
@@ -505,6 +509,7 @@ function drawHead(now){
 window.addEventListener("resize",()=>{ if(P) drawCurve(); });
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden && ctx && ctx.state!=="running" && playing) ctx.resume(); });
 
+window.addEventListener("pageshow",ev=>{ if(ev.persisted && !playing){ applyDefaults(); leapLabel(); makeNotes(); renderNotes(); idle(); } });
 makeNotes(); renderNotes(); idle();
 })();
 </script>
