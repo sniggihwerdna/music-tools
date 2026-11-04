@@ -1,0 +1,364 @@
+<!doctype html>
+<!-- Retrograde Trainer — v6 — 2026-11-02: chromatic by default; 12-tone row button (count-in, then the row loops, no retrograde). v5: no repeated notes. v4: count-in on new phrase; random tempo. v3: tempo 140, half notes. v2: longer notes; 4 times. v1: phrase, 4 clicks, reversed -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Music Tools">
+<meta name="theme-color" content="#23675B">
+<title>Retrograde Trainer</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one column practice tool — transport, phase + two note rows (original / transformed), then settings */
+:root{
+  --bg:#F2F4F6; --surface:#FFFFFF; --fg:#16202A; --muted:#5B6875; --line:#D6DDE4;
+  --accent:#23675B; --accent-fg:#FFFFFF; --brass:#B9812A; --chip:#E7ECF0; --rest:#7A5AA8;
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"Instrument Sans", "Helvetica Neue", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0F1418; --surface:#172027; --fg:#E5EAEE; --muted:#92A0AC; --line:#2A353F;
+  --accent:#5FB3A3; --accent-fg:#0C1A17; --brass:#E2B157; --chip:#212C35; --rest:#A98BD6; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0F1418; --surface:#172027; --fg:#E5EAEE; --muted:#92A0AC; --line:#2A353F;
+  --accent:#5FB3A3; --accent-fg:#0C1A17; --brass:#E2B157; --chip:#212C35; --rest:#A98BD6; color-scheme:dark }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,6vw,36px);line-height:1.05;margin:0;letter-spacing:-.01em}
+.ver{font:600 12px var(--mono);color:var(--muted);vertical-align:middle;border:1px solid var(--line);border-radius:6px;padding:2px 6px}
+.sub{color:var(--muted);margin:4px 0 0;max-width:60ch}
+
+.transport{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button{font:600 15px/1 var(--body);border-radius:999px;padding:13px 20px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;min-height:46px}
+button:focus-visible, input:focus-visible, select:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);min-width:120px}
+button:active{transform:translateY(1px)}
+
+.live{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.top{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
+.phase{font-family:var(--display);font-weight:700;font-size:20px;line-height:1.1;padding:9px 14px;border-radius:10px;background:var(--chip);text-align:center;min-width:9em}
+.phase.orig{background:var(--accent);color:var(--accent-fg)}
+.phase.gap{background:var(--brass);color:#1A1206}
+.phase.turn{background:var(--rest);color:#fff}
+.phase.answer{background:var(--fg);color:var(--bg)}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat b{font-family:var(--mono);font-size:16px;font-variant-numeric:tabular-nums;font-weight:600}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.rowlab{display:flex;align-items:baseline;gap:8px}
+.rowlab b{font-family:var(--display);font-size:15px}
+.notes{display:flex;flex-wrap:wrap;gap:6px}
+.note{font-family:var(--mono);font-size:15px;padding:7px 10px;border-radius:8px;background:var(--chip);min-width:46px;text-align:center;font-variant-numeric:tabular-nums;position:relative}
+.note small{display:block;font-size:10px;color:var(--muted)}
+.note.on{background:var(--brass);color:#1A1206}
+.note.on small{color:#1A1206}
+.notes.hide .note{color:transparent}
+.notes.hide .note small{color:transparent}
+.notes.hide .note.on{color:transparent}
+
+form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px}
+fieldset{border:1px solid var(--line);border-radius:14px;padding:12px 14px 14px;margin:0;display:grid;align-content:start;grid-template-columns:1fr 1fr;gap:10px 12px;background:var(--surface);min-width:0}
+legend{font-family:var(--display);font-weight:700;font-size:16px;padding:0 6px}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f.wide{grid-column:1/-1}
+.f label{font-size:12.5px;color:var(--muted);font-weight:500}
+input[type=number],select{font:500 16px var(--mono);padding:9px 10px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--fg);width:100%;min-height:42px}
+.check{flex-direction:row;align-items:center;gap:8px;grid-column:1/-1}
+.check input{width:20px;height:20px;accent-color:var(--accent);margin:0}
+.check label{font-size:14px;color:var(--fg)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.hint{grid-column:1/-1;font-size:12.5px;color:var(--muted);margin:0}
+.foot{font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <a href="./" style="display:inline-block;margin:0 0 10px;font:600 14px system-ui,-apple-system,sans-serif;color:#23675B;text-decoration:none">&lsaquo; All tools</a>
+
+  <header>
+    <h1>Retrograde Trainer <span class="ver">v6</span></h1>
+    <p class="sub">A random phrase plays, then 4 clicks, then the same phrase backwards, 4 times through before a new phrase. In test mode you get a silent turn to sing or play the reversed phrase before you hear the answer.</p>
+  </header>
+
+  <div class="transport">
+    <button id="play" class="primary" type="button">Start</button>
+    <button id="next" type="button">New phrase</button>
+    <button id="replay" type="button">Hear it again</button>
+    <button id="rowBtn" type="button">12-tone row</button>
+  </div>
+
+  <section class="live">
+    <div class="top">
+      <div class="phase" id="phase">Ready</div>
+      <div class="stat"><span class="label">Change</span><b id="xfOut">Retrograde</b></div>
+      <div class="stat"><span class="label">Repeat</span><b id="repOut">–</b></div>
+      <div class="stat"><span class="label">BPM</span><b id="bpmOut">140</b></div>
+    </div>
+    <div class="rowlab"><b>Phrase</b><span class="label" id="lenOut"></span></div>
+    <div class="notes" id="origRow"></div>
+    <div class="rowlab" id="xfWrap"><b id="xfLab">Backwards</b></div>
+    <div class="notes" id="xfRow"></div>
+  </section>
+
+  <form id="opts" autocomplete="off">
+    <fieldset>
+      <legend>Phrase</legend>
+      <div class="f"><label for="len">Notes in phrase</label>
+        <select id="len"><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="10">10</option><option value="12">12</option><option value="r">Random 3–8</option></select></div>
+      <div class="f"><label for="key">Key</label><select id="key"></select></div>
+      <div class="f wide"><label for="scale">Scale</label><select id="scale"></select></div>
+      <div class="f"><label for="low">Lowest note</label><select id="low"></select></div>
+      <div class="f"><label for="high">Highest note</label><select id="high"></select></div>
+      <div class="f wide"><label for="leap">Average distance between notes: <b id="leapVal" style="color:var(--fg)"></b></label>
+        <input id="leap" type="range" min="1" max="12" step="1" value="3"></div>
+      <div class="f wide"><label for="rhythm">Rhythm</label>
+        <select id="rhythm"><option value="even" selected>Even notes</option><option value="mixed">Mixed lengths (reversed too)</option></select></div>
+      <div class="f check"><input id="noRepeat" type="checkbox" checked><label for="noRepeat">No note used twice in a phrase</label></div>
+      <p class="hint">If the phrase is longer than the notes available in the range, some notes repeat, but never back to back.</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Exercise</legend>
+      <div class="f wide"><label for="xf">Change to the phrase</label>
+        <select id="xf"><option value="R" selected>Retrograde (backwards)</option><option value="I">Inversion (upside down)</option><option value="RI">Retrograde inversion (backwards and upside down)</option><option value="rand">Random each phrase</option></select></div>
+      <div class="f wide"><label for="mode">Mode</label>
+        <select id="mode"><option value="demo" selected>Listen: phrase, 4 clicks, backwards</option><option value="test">Test: phrase, 4 clicks, your turn, then the answer</option></select></div>
+      <div class="f"><label for="reps">Times per phrase</label><input id="reps" type="number" min="1" max="16" value="4"></div>
+      <div class="f"><label for="gap">Clicks in the gap</label>
+        <select id="gap"><option value="2">2</option><option value="4" selected>4</option><option value="8">8</option></select></div>
+      <div class="f wide"><label for="show">Show note names</label>
+        <select id="show"><option value="always" selected>Always</option><option value="after">Only after each one plays</option><option value="never">Never (ear only)</option></select></div>
+      <p class="hint">Inversion flips each step around the first note: up a third becomes down a third.</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Tempo and sound</legend>
+      <div class="f"><label for="bpm">Starting BPM</label><input id="bpm" type="number" min="30" max="300" value="140"></div>
+      <div class="f check"><input id="randTempo" type="checkbox" checked><label for="randTempo">New random tempo with each new phrase</label></div>
+      <div class="f"><label for="tMin">Slowest: <b id="tMinVal" style="color:var(--fg)">100</b></label><input id="tMin" type="range" min="40" max="240" step="1" value="100"></div>
+      <div class="f"><label for="tMax">Fastest: <b id="tMaxVal" style="color:var(--fg)">180</b></label><input id="tMax" type="range" min="40" max="240" step="1" value="180"></div>
+      <div class="f"><label for="sub">Phrase notes</label>
+        <select id="sub"><option value="0.5" selected>Half notes (2 beats)</option><option value="1">Quarter notes (1 beat)</option><option value="2">Eighth notes</option></select></div>
+      <div class="f wide"><label for="noteLen">Note length</label>
+        <select id="noteLen"><option value="1.15" selected>Long (held into the next note)</option><option value="0.95">Full</option><option value="0.7">Normal</option><option value="0.4">Short</option></select></div>
+      <div class="f wide"><label for="tone">Tone</label>
+        <select id="tone"><option value="steady" selected>Steady (good for singing along)</option><option value="epiano">Electric piano</option><option value="marimba">Marimba</option><option value="sine">Pure (sine)</option></select></div>
+      <div class="f"><label for="noteVol">Notes volume</label><input id="noteVol" type="range" min="0" max="1" step="0.01" value="0.8"></div>
+      <div class="f"><label for="clickVol">Click volume</label><input id="clickVol" type="range" min="0" max="1" step="0.01" value="0.5"></div>
+      <div class="f check"><input id="beatClick" type="checkbox"><label for="beatClick">Click under the phrases too</label></div>
+    </fieldset>
+  </form>
+
+  <p class="foot">No sound on an iPhone? Turn the volume up and tap Start again. The page tries to play through the silent switch, but older iOS versions may still need the switch off.</p>
+</div>
+
+<script>
+(() => {
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const SHARP=["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"], FLAT=["C","D♭","D","E♭","E","F","G♭","G","A♭","A","B♭","B"];
+const FLAT_KEYS=new Set([5,10,3,8,1,6]);
+const SCALES={"Major":[0,2,4,5,7,9,11],"Natural minor":[0,2,3,5,7,8,10],"Major pentatonic":[0,2,4,7,9],"Minor pentatonic":[0,3,5,7,10],"Dorian":[0,2,3,5,7,9,10],"Blues":[0,3,5,6,7,10],"Chromatic":[0,1,2,3,4,5,6,7,8,9,10,11]};
+const INAMES=["","half step","whole step","minor 3rd","major 3rd","4th","tritone","5th","minor 6th","major 6th","minor 7th","major 7th","octave"];
+const XNAME={R:"Retrograde",I:"Inversion",RI:"Retrograde inversion"}, XLAB={R:"Backwards",I:"Upside down",RI:"Backwards and upside down"};
+
+SHARP.forEach((n,i)=>$("key").add(new Option(SHARP[i]===FLAT[i]?n:`${SHARP[i]} / ${FLAT[i]}`,i)));
+Object.keys(SCALES).forEach(s=>$("scale").add(new Option(s,s)));
+for(let m=40;m<=88;m++){ const nm=SHARP[m%12]+(Math.floor(m/12)-1); $("low").add(new Option(nm,m)); $("high").add(new Option(nm,m)); }
+function applyDefaults(){ try{ $("opts").reset(); }catch(e){} $("scale").value="Chromatic"; $("key").value="0"; $("low").value="60"; $("high").value="72"; leapLabel(); }
+function leapLabel(){ const v=+$("leap").value; $("leapVal").textContent=`about ${v} semitone${v>1?"s":""} (${INAMES[v]})`; }
+$("leap").addEventListener("input",leapLabel);
+const nameOf=m=>{ const t=FLAT_KEYS.has(+$("key").value)?FLAT:SHARP; return t[((m%12)+12)%12]+(Math.floor(m/12)-1); };
+
+// ---------- phrase ----------
+let phrase=[], xf="R", out=[];   // phrase: [{m, beats}]
+function pool(){
+  let lo=+$("low").value, hi=+$("high").value; if(lo>hi)[lo,hi]=[hi,lo];
+  const k=+$("key").value, sc=SCALES[$("scale").value], p=[];
+  for(let m=lo;m<=hi;m++) if(sc.includes(((m-k)%12+12)%12)) p.push(m);
+  return {p:p.length?p:[60],lo,hi};
+}
+function newPhrase(){
+  const {p,lo,hi}=pool(), n=$("len").value==="r"?3+Math.floor(Math.random()*6):+$("len").value, avg=+$("leap").value;
+  const ms=[rnd(p)];
+  for(let i=1;i<n;i++){
+    const prev=ms[i-1], d=Math.max(1,Math.round(-avg*Math.log(1-Math.random()*0.999)));
+    let dir=Math.random()<0.5?-1:1, target=prev+dir*d; if(target>hi||target<lo){dir=-dir;target=prev+dir*d;} target=clamp(target,lo,hi);
+    // never the same note twice in a row; with the setting on, never reuse any note in the phrase
+    let c=p.filter(m=>m!==prev);
+    if($("noRepeat").checked){ const fresh=c.filter(m=>!ms.includes(m)); if(fresh.length) c=fresh; }
+    let best=Infinity, picks=[];
+    for(const m of (c.length?c:p)){ const e=Math.abs(m-target); if(e<best){best=e;picks=[m];} else if(e===best) picks.push(m); }
+    ms.push(rnd(picks));
+  }
+  const lens = $("rhythm").value==="mixed" ? ms.map(()=>rnd([0.5,1,1,1,1.5,2])) : ms.map(()=>1);
+  phrase=ms.map((m,i)=>({m,beats:lens[i]}));
+  xf = $("xf").value==="rand" ? rnd(["R","I","RI"]) : $("xf").value;
+  transform(); render();
+}
+// nearest note in the scale (not limited to the range, so an inversion can go below or above it)
+function snapToScale(m,used){ const k=+$("key").value, sc=SCALES[$("scale").value]; let first=null;
+  for(let d=0;d<12;d++){ for(const s of [m-d,m+d]) if(sc.includes(((s-k)%12+12)%12)){ if(first===null) first=s; if(!used||!used.has(s)) return s; } } return first??m; }
+function transform(){
+  const first=phrase[0].m;
+  const inv=a=>{ const used=$("noRepeat").checked?new Set():null; return a.map(n=>{ const m=snapToScale(2*first-n.m,used); if(used) used.add(m); return {m,beats:n.beats}; }); };
+  out = xf==="R" ? phrase.slice().reverse() : xf==="I" ? inv(phrase) : inv(phrase).reverse();
+}
+// 12-tone row: all twelve pitch classes once, in random order, placed in the octave above the lowest note
+let rowMode=false;
+function newRow(){
+  const lo=Math.min(+$("low").value,+$("high").value), pcs=[...Array(12).keys()];
+  for(let i=11;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pcs[i],pcs[j]]=[pcs[j],pcs[i]]; }
+  phrase=pcs.map(pc=>({m:lo+((pc-lo%12)+12)%12,beats:1})); out=[]; render();
+}
+function render(){
+  const draw=(row,list)=>{ const el=$(row); el.textContent=""; list.forEach(n=>{ const d=document.createElement("span"); d.className="note"; d.textContent=nameOf(n.m);
+    if($("rhythm").value==="mixed"){ const s=document.createElement("small"); s.textContent=n.beats===1?"1 beat":`${n.beats} beats`; d.appendChild(s); } el.appendChild(d); }); };
+  draw("origRow",phrase); draw("xfRow",out);
+  $("xfWrap").hidden=rowMode; $("xfRow").hidden=rowMode;
+  $("xfOut").textContent=rowMode?"12-tone row":XNAME[xf]; $("xfLab").textContent=XLAB[xf]; $("lenOut").textContent=rowMode?"12 notes, each pitch once":`${phrase.length} notes`;
+  applyShow(null);
+}
+// hide/show names: "after" reveals a row once it has played
+let revealed={origRow:false,xfRow:false};
+function applyShow(){ const mode=$("show").value;
+  ["origRow","xfRow"].forEach(r=>$(r).classList.toggle("hide", mode==="never" || (mode==="after" && !revealed[r]))); }
+
+// ---------- audio ----------
+let ctx=null, noteBus=null, clickBus=null, silentEl=null, wave=null;
+function silentWavURL(){
+  const sr=8000,n=4000,b=new ArrayBuffer(44+n*2),v=new DataView(b),w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+  w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVE");w(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+  return URL.createObjectURL(new Blob([b],{type:"audio/wav"}));
+}
+async function ensureAudio(){
+  try{ if(navigator.audioSession) navigator.audioSession.type="playback"; }catch(e){}
+  try{ if(!silentEl){ silentEl=new Audio(silentWavURL()); silentEl.loop=true; } await silentEl.play(); }catch(e){}
+  if(!ctx){
+    ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const comp=ctx.createDynamicsCompressor(); comp.connect(ctx.destination);
+    noteBus=ctx.createGain(); noteBus.gain.value=+$("noteVol").value; noteBus.connect(comp);
+    clickBus=ctx.createGain(); clickBus.gain.value=+$("clickVol").value; clickBus.connect(comp);
+    const h=[0,1,.62,.42,.3,.22,.16,.12,.09,.07,.05]; wave=ctx.createPeriodicWave(new Float32Array(h.length),Float32Array.from(h));
+  }
+  if(ctx.state!=="running") await ctx.resume();
+}
+$("noteVol").addEventListener("input",()=>{ if(noteBus) noteBus.gain.setTargetAtTime(+$("noteVol").value,ctx.currentTime,.02); });
+$("clickVol").addEventListener("input",()=>{ if(clickBus) clickBus.gain.setTargetAtTime(+$("clickVol").value,ctx.currentTime,.02); });
+const hz=m=>440*Math.pow(2,(m-69)/12);
+function noteAt(at,m,dur){
+  const f=hz(m), tone=$("tone").value, o=ctx.createOscillator(), g=ctx.createGain();
+  let len=Math.max(0.08,dur*(+$("noteLen").value||1));
+  if(tone==="steady"){ o.setPeriodicWave(wave); const lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=Math.min(12000,f*9); o.connect(lp); lp.connect(g);
+    g.gain.setValueAtTime(0.0001,at); g.gain.linearRampToValueAtTime(0.22,at+0.025); g.gain.setValueAtTime(0.2,at+len-0.08); g.gain.linearRampToValueAtTime(0.0001,at+len); }
+  else if(tone==="sine"){ o.type="sine"; o.connect(g); g.gain.setValueAtTime(0.0001,at); g.gain.linearRampToValueAtTime(0.32,at+0.015); g.gain.setValueAtTime(0.3,at+len-0.04); g.gain.linearRampToValueAtTime(0.0001,at+len); }
+  else { // FM: electric piano or marimba
+    const mod=ctx.createOscillator(), mg=ctx.createGain(), ratio=tone==="marimba"?4:1, idx=tone==="marimba"?1.3:2.2, dec=tone==="marimba"?0.6:Math.max(1.2,len);
+    o.type="sine"; mod.frequency.value=f*ratio; mg.gain.setValueAtTime(f*idx,at); mg.gain.setTargetAtTime(f*idx*0.12,at+0.005,(tone==="marimba"?0.08:0.6)/3);
+    mod.connect(mg); mg.connect(o.frequency); o.connect(g); mod.start(at); mod.stop(at+len+dec);
+    g.gain.setValueAtTime(0.0001,at); g.gain.exponentialRampToValueAtTime(tone==="marimba"?0.42:0.32,at+0.004); g.gain.exponentialRampToValueAtTime(0.0001,at+Math.max(len,dec)); len=Math.max(len,dec);
+  }
+  o.frequency.setValueAtTime(f,at); g.connect(noteBus); o.start(at); o.stop(at+len+0.05);
+}
+function click(at,strong,level=1){ const o=ctx.createOscillator(),g=ctx.createGain(); o.type="sine"; o.frequency.value=strong?1760:1320;
+  g.gain.setValueAtTime(0.0001,at); g.gain.exponentialRampToValueAtTime((strong?0.6:0.42)*level,at+0.002); g.gain.exponentialRampToValueAtTime(0.0001,at+0.045);
+  o.connect(g); g.connect(clickBus); o.start(at); o.stop(at+0.06); }
+
+// ---------- sequencing ----------
+// a round: [count-in on the first round] phrase, gap clicks, (test: silent turn, gap clicks) transformed phrase, gap clicks
+let curBpm=140;
+function pickTempo(){ if(!$("randTempo").checked) return; let lo=+$("tMin").value, hi=+$("tMax").value; if(lo>hi)[lo,hi]=[hi,lo];
+  let b=curBpm, tries=0; while(tries++<20 && Math.abs(b-curBpm)<Math.max(4,(hi-lo)*0.15)) b=Math.round(lo+Math.random()*(hi-lo)); curBpm=b; }
+let playing=false, timer=null, raf=null, ev=[], evI=0, vis=[], t0=0, roundEnd=0, repDone=0, firstRound=true, onlyOnce=false;
+function buildRound(start){
+  const beat=60/curBpm, unit=beat/(+$("sub").value||1), gapN=+$("gap").value, test=$("mode").value==="test", e=[];
+  let t=start;
+  const clicks=(label)=>{ for(let i=0;i<gapN;i++){ e.push({t,kind:"click",strong:i===0}); if(i===0) e.push({t,kind:"phase",label}); t+=beat; } };
+  const phraseEv=(list,row,label)=>{ e.push({t,kind:"phase",label,row}); list.forEach((n,i)=>{ const d=n.beats*unit; e.push({t,kind:"note",m:n.m,d,row,i});
+      if($("beatClick").checked) e.push({t,kind:"click",strong:false,soft:true}); t+=d; }); e.push({t,kind:"done",row}); };
+  e.push({t,kind:"bpm",v:curBpm});
+  if(firstRound) clicks("count");
+  if(rowMode){ phraseEv(phrase,"origRow","row"); firstRound=false; return {e,end:t}; }
+  phraseEv(phrase,"origRow","orig");
+  clicks("gap");
+  if(test){ const total=out.reduce((a,n)=>a+n.beats*unit,0); e.push({t,kind:"phase",label:"turn"}); t+=total; clicks("gap2"); }
+  phraseEv(out,"xfRow","answer");
+  clicks("gap");
+  firstRound=false; return {e,end:t};
+}
+function scheduler(){
+  const ahead=ctx.currentTime+0.15;
+  while(evI<ev.length && ev[evI].t<ahead){
+    const x=ev[evI++];
+    if(x.kind==="note") noteAt(x.t,x.m,x.d);
+    else if(x.kind==="click") click(x.t,x.strong,x.soft?0.35:1);
+    vis.push(x);
+  }
+  if(evI>=ev.length && ctx.currentTime>roundEnd-0.2){
+    if(onlyOnce){ if(ctx.currentTime>roundEnd) { stop(); return; } }
+    else if(rowMode){ const r=buildRound(roundEnd); ev=r.e; evI=0; roundEnd=r.end; repDone++; }
+    else {
+      repDone++;
+      if(repDone>=clamp(+$("reps").value||1,1,16)){ repDone=0; newPhrase(); revealed={origRow:false,xfRow:false}; pickTempo(); firstRound=true; }
+      const r=buildRound(roundEnd); ev=r.e; evI=0; roundEnd=r.end;
+    }
+  }
+  timer=setTimeout(scheduler,25);
+}
+const PH={row:["12-tone row","orig"],count:["Count-in","gap"],orig:["Phrase","orig"],gap:["…","gap"],gap2:["Answer next","gap"],turn:["Your turn – reverse it","turn"],answer:["Answer","answer"]};
+function frame(){
+  if(!playing) return;
+  const now=ctx.currentTime;
+  while(vis.length && vis[0].t<=now){ const x=vis.shift();
+    if(x.kind==="bpm"){ $("bpmOut").textContent=x.v; }
+    else if(x.kind==="phase"){ const [txt,cls]=PH[x.label]; const p=$("phase"); p.textContent= x.label==="answer"?XLAB[xf]:x.label==="turn"?(xf==="R"?"Your turn – backwards":"Your turn – "+XLAB[xf].toLowerCase()):txt; p.className="phase "+cls;
+      $("repOut").textContent=rowMode?`loop ${repDone+1}`:`${repDone+1} / ${clamp(+$("reps").value||1,1,16)}`; }
+    else if(x.kind==="note"){ document.querySelectorAll(".note.on").forEach(n=>n.classList.remove("on")); $(x.row).children[x.i]?.classList.add("on"); }
+    else if(x.kind==="done"){ document.querySelectorAll(".note.on").forEach(n=>n.classList.remove("on")); revealed[x.row]=true; applyShow(); }
+  }
+  raf=requestAnimationFrame(frame);
+}
+async function start(once=false){
+  await ensureAudio();
+  if(!once) curBpm=clamp(+$("bpm").value||140,30,300);
+  onlyOnce=once; firstRound=!once; repDone=0; vis=[]; revealed={origRow:false,xfRow:false}; applyShow();
+  const r=buildRound(ctx.currentTime+0.1); ev=r.e; evI=0; roundEnd=r.end;
+  playing=true; $("play").textContent="Stop"; $("bpmOut").textContent=curBpm; scheduler(); frame();
+}
+function stop(){
+  playing=false; clearTimeout(timer); cancelAnimationFrame(raf);
+  if(ctx){ const n=ctx.currentTime; [[noteBus,"noteVol"],[clickBus,"clickVol"]].forEach(([g,id])=>{ g.gain.cancelScheduledValues(n); g.gain.setValueAtTime(0,n); g.gain.setValueAtTime(+$(id).value,n+0.3); }); }
+  $("play").textContent="Start"; $("phase").className="phase"; $("phase").textContent="Ready"; $("repOut").textContent="–";
+  document.querySelectorAll(".note.on").forEach(n=>n.classList.remove("on"));
+}
+$("play").addEventListener("click",()=>{ if(playing){ stop(); return; } if(rowMode){ rowMode=false; newPhrase(); } start(); });
+$("rowBtn").addEventListener("click",()=>{ if(playing) stop(); rowMode=true; newRow(); start(); });
+$("replay").addEventListener("click",()=>{ if(playing) stop(); start(true); });
+$("next").addEventListener("click",()=>{ if(rowMode) newRow(); else newPhrase(); repDone=0; revealed={origRow:false,xfRow:false}; applyShow();
+  if(playing){ pickTempo(); firstRound=true; const at=Math.max(ctx.currentTime+0.1, ev.length&&evI<ev.length ? ctx.currentTime+0.1 : roundEnd); const r=buildRound(at); ev=r.e; evI=0; roundEnd=r.end; vis=[]; } });
+["len","key","scale","low","high","leap","rhythm","xf","noRepeat"].forEach(id=>$(id).addEventListener("change",()=>{ if(!playing){ if(rowMode) newRow(); else newPhrase(); } }));
+$("show").addEventListener("change",applyShow);
+$("bpm").addEventListener("change",()=>{ if(!playing) $("bpmOut").textContent=$("bpm").value; });
+["tMin","tMax"].forEach(id=>$(id).addEventListener("input",()=>{ $(id+"Val").textContent=$(id).value; }));
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && ctx && playing && ctx.state!=="running") ctx.resume(); });
+
+applyDefaults();
+window.addEventListener("pageshow",evt=>{ if(evt.persisted && !playing){ applyDefaults(); newPhrase(); } });
+newPhrase();
+})();
+</script>
+<script>if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
+</body>
+</html>
