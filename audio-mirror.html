@@ -78,7 +78,7 @@ canvas{width:100%;height:110px;display:block;border-radius:10px;background:var(-
 input[type=range]{width:100%;accent-color:var(--accent)}
 .takes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .takes li{display:flex;align-items:center;gap:8px;font-size:14px}
-.takes li span{flex:1;font:500 13px var(--mono);color:var(--muted)}
+.takes li span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;font:500 13px var(--mono);color:var(--muted)}
 .foot{font-size:12.5px;color:var(--muted)}
 .takesHead{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .takesHead h3{margin:0}
@@ -88,6 +88,16 @@ body.quick .loopOnly{display:none!important}
 body.quick .quickOnly{display:block}
 body.quick #qBtn,body.quick #qStop{font-size:22px;padding:20px 34px;min-height:72px}
 body.quick #qPhase{font-size:22px}
+.meterRow{display:flex;align-items:center;gap:10px;margin:10px 0 4px}
+.mlab{font:600 12px var(--mono);color:var(--muted)}
+.meter{position:relative;flex:1;height:12px;background:var(--chip);border-radius:6px;overflow:hidden}
+.meter i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,var(--accent) 0 70%,var(--brass) 70% 90%,var(--rec) 90%)}
+.meter i{background-size:var(--mw,100%) 100%}
+.meter b{position:absolute;top:0;bottom:0;width:2px;left:0;background:var(--fg);opacity:.6}
+.mval{font:500 12px var(--mono);color:var(--muted);min-width:64px;text-align:right}
+.mval.dead{color:var(--rec);font-weight:600}
+canvas.takeWave{display:block;width:100%;height:90px;margin-top:10px;background:var(--chip);border-radius:10px}
+canvas.mini{width:64px;height:28px;background:var(--chip);border-radius:6px;flex:none}
 </style>
 </head>
 <body>
@@ -96,7 +106,7 @@ body.quick #qPhase{font-size:22px}
   <a href="./" style="display:inline-block;margin:0 0 10px;font:600 14px system-ui,-apple-system,sans-serif;color:#23675B;text-decoration:none">&lsaquo; All tools</a>
 
   <header>
-    <h1><span id="h1t">Audio Mirror</span> <span class="ver">v5</span></h1>
+    <h1><span id="h1t">Audio Mirror</span> <span class="ver">v6</span></h1>
     <p class="sub" id="sub">Sing, and hear your take played straight back, over and over. Use the quick mirror with no music, or loop a phrase from a file and sing with it.</p>
   </header>
 
@@ -109,6 +119,8 @@ body.quick #qPhase{font-size:22px}
       <span class="hint" id="qTake"></span>
     </div>
     <div class="bar"><i id="qProg"></i></div>
+    <div class="meterRow"><span class="mlab">Mic</span><div class="meter"><i></i><b></b></div><span class="mval">off</span><button class="small micTest" type="button">Test mic</button></div>
+    <canvas id="qWave" class="takeWave" aria-label="Waveform of your last take"></canvas>
     <p class="msg" id="qMsg" hidden></p>
     <label class="check"><input id="qBeep" type="checkbox" checked> Beep when each recording starts</label>
     <p class="hint quickOnly"><a href="audio-mirror.html" id="toFull">Use a loop instead (full Audio Mirror)</a></p>
@@ -153,6 +165,7 @@ body.quick #qPhase{font-size:22px}
       <span class="hint" id="takeNo"></span>
     </div>
     <div class="bar loopOnly"><i id="prog"></i></div>
+    <div class="loopOnly"><div class="meterRow"><span class="mlab">Mic</span><div class="meter"><i></i><b></b></div><span class="mval">off</span><button class="small micTest" type="button">Test mic</button></div></div>
     <p class="msg loopOnly" id="mirMsg" hidden></p>
     <div class="grid">
       <div class="f loopOnly"><label for="passes">Loop plays while you sing</label>
@@ -233,10 +246,37 @@ async function ensureMic(){
   catch(e){ return false; }
   const src=ctx.createMediaStreamSource(micStream); const BS=2048;
   proc=ctx.createScriptProcessor(BS,1,1);
-  proc.onaudioprocess=e=>{ if(!cap.on) return; const d=new Float32Array(e.inputBuffer.getChannelData(0)); cap.push(d, ctx.currentTime - BS/ctx.sampleRate); };
+  proc.onaudioprocess=e=>{ const ch=e.inputBuffer.getChannelData(0); let pk=0; for(let i=0;i<ch.length;i+=4){ const a=Math.abs(ch[i]); if(a>pk) pk=a; } lvl.peak=Math.max(pk,lvl.peak*0.85); lvl.hold=Math.max(pk,lvl.hold*0.995); lvl.last=performance.now(); if(pk>0.003) lvl.heard=performance.now();
+    if(!cap.on) return; const d=new Float32Array(ch); cap.push(d, ctx.currentTime - BS/ctx.sampleRate); };
   const z=ctx.createGain(); z.gain.value=0; src.connect(proc); proc.connect(z); z.connect(ctx.destination);
-  return true;
+  startMeter(); return true;
 }
+// live mic meter
+const lvl={peak:0,hold:0,last:0,heard:0,raf:0,since:0};
+function startMeter(){ if(lvl.raf) return; lvl.since=performance.now(); const f=()=>{ lvl.raf=requestAnimationFrame(f);
+  const now=performance.now(), stale=now-lvl.last>500; const db=v=>v>0?20*Math.log10(v):-99;
+  const pos=v=>clamp((db(v)+60)/60,0,1);
+  let txt, dead=false;
+  if(stale){ txt=(now-lvl.since>1500)?"no input":"starting"; dead=now-lvl.since>1500; }
+  else if(now-lvl.heard>3000 && now-lvl.since>3000){ txt="silent"; dead=true; }
+  else txt=Math.max(-60,Math.round(db(lvl.peak)))+" dB";
+  document.querySelectorAll(".meter").forEach(m=>{ const w=pos(stale?0:lvl.peak); m.querySelector("i").style.width=(w*100)+"%"; m.style.setProperty("--mw",(w>0?100/w:100)+"%"); m.querySelector("b").style.left=`calc(${pos(lvl.hold)*100}% - 1px)`; });
+  document.querySelectorAll(".mval").forEach(v=>{ v.textContent=txt; v.classList.toggle("dead",dead); });
+  if(document.hidden){ cancelAnimationFrame(lvl.raf); lvl.raf=0; } };
+  f(); }
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && micStream) startMeter(); });
+document.querySelectorAll(".micTest").forEach(b=>b.addEventListener("click",async()=>{ await ensureAudio(true); if(!(await ensureMic())){ micBlocked(b.closest(".loopOnly")?"mirMsg":"qMsg"); return; } lvl.since=performance.now(); startMeter(); document.querySelectorAll(".micTest").forEach(x=>x.textContent="Mic on"); }));
+// take waveform drawing
+function drawTakeWave(cv,buf,ph){ if(!cv) return; const dpr=window.devicePixelRatio||1, W=cv.clientWidth||96, H=cv.clientHeight||28;
+  if(cv.width!==Math.round(W*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); }
+  const g=cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W,H);
+  const cs=getComputedStyle(document.body);
+  if(!buf){ g.fillStyle=cs.getPropertyValue("--muted"); g.font="13px "+cs.getPropertyValue("--body"); g.textAlign="center"; g.textBaseline="middle"; if(H>40) g.fillText("Your last take shows here",W/2,H/2); return; }
+  const d=buf.getChannelData(0), n=Math.max(1,Math.floor(W)), step=d.length/n; g.fillStyle=cs.getPropertyValue("--accent");
+  let any=0; for(let x=0;x<n;x++){ let mn=0,mx=0; const a=Math.floor(x*step), b=Math.min(d.length,Math.floor((x+1)*step)); for(let i=a;i<b;i++){ const v=d[i]; if(v<mn) mn=v; if(v>mx) mx=v; } any=Math.max(any,mx,-mn);
+    const y1=H/2-mx*H/2, y2=H/2-mn*H/2; g.fillRect(x,y1,1,Math.max(1,y2-y1)); }
+  if(any<0.003 && H>40){ g.fillStyle=cs.getPropertyValue("--rec"); g.font="600 13px "+cs.getPropertyValue("--body"); g.textAlign="center"; g.textBaseline="top"; g.fillText("Silent take: no sound reached the mic",W/2,6); }
+  if(ph!=null){ g.fillStyle=cs.getPropertyValue("--fg"); g.fillRect(Math.round(ph*W),0,2,H); } }
 function toBuffer(f32){ const b=ctx.createBuffer(1,f32.length,ctx.sampleRate); b.copyToChannel?b.copyToChannel(f32,0):b.getChannelData(0).set(f32); return b; }
 function normalize(f32){ let pk=0; for(const v of f32) pk=Math.max(pk,Math.abs(v)); if(pk>0.0005 && pk<0.9){ const g=Math.min(12,0.9/pk); for(let i=0;i<f32.length;i++) f32[i]*=g; } return f32; }
 function wavBlob(f32,sr){ const n=f32.length,b=new ArrayBuffer(44+n*2),v=new DataView(b),w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
@@ -438,12 +478,16 @@ function qFinish(t0){
   if(!qm.on) return;
   const lat=+$("latency").value/1000, len=qm.len;
   let f=cap.extract(t0+lat,t0+lat+len); if($("boost").checked) f=normalize(f);
-  const take=toBuffer(f); addTake(take,qm.n);
+  const take=toBuffer(f); addTake(take,qm.n); qm.last=take; drawTakeWave($("qWave"),take);
   const gap=+$("gap").value, ts=ctx.currentTime+Math.min(gap,0.5)+0.05;
   qm.nodes=[]; const {tEnd,lbl}=playTakeAt(take,len,ts,qm.nodes);
-  setTimeout(()=>{ if(qm.on){ qPhase("take",lbl); qProg(ts,tEnd); } },Math.max(0,(ts-ctx.currentTime)*1000));
+  setTimeout(()=>{ if(qm.on){ qPhase("take",lbl); qProg(ts,tEnd); qHead(take,ts,len,tEnd); } },Math.max(0,(ts-ctx.currentTime)*1000));
   qm.timer=setTimeout(()=>{ if(!qm.on) return; if(gap>0) qPhase("wait","Get ready"); qm.timer=setTimeout(qRecordStart,gap*1000); },Math.max(0,(tEnd-ctx.currentTime)*1000));
 }
+function qHead(take,ts,len,tEnd){ const f=()=>{ if(!qm.on||qm.last!==take) return; const now=ctx.currentTime; if(now>=tEnd){ drawTakeWave($("qWave"),take); return; }
+  const r=rateFor(+$("cents").value), el=now-ts; let ph=null; if(el>=0){ const both=+$("cents").value!==0&&$("shiftMode").value==="both"; let t=el, segs=[]; for(let i=0;i<+$("takePlays").value;i++){ if(both) segs.push(len); segs.push(len/r); }
+    for(const sg of segs){ if(t<sg){ ph=t/sg; break; } t-=sg; } }
+  drawTakeWave($("qWave"),take,ph); requestAnimationFrame(f); }; f(); }
 function qStop(){
   qm.on=false; qm.stage=null; clearTimeout(qm.timer); cancelAnimationFrame(qm.pr);
   for(const n of qm.nodes){ try{ n.stop(); }catch(e){} } qm.nodes=[];
@@ -461,15 +505,16 @@ window.addEventListener("hashchange",applyView); applyView();
 // recent takes (this session only; save one to keep it)
 const takes=[];
 function addTake(b,n){ takes.unshift({b,n,at:new Date()}); if(takes.length>8) takes.pop(); drawTakes(); }
-$("clearTakes").addEventListener("click",()=>{ takes.length=0; drawTakes(); });
+$("clearTakes").addEventListener("click",()=>{ takes.length=0; qm.last=null; drawTakes(); drawTakeWave($("qWave"),null); });
+drawTakeWave($("qWave"),null); window.addEventListener("resize",()=>drawTakeWave($("qWave"),qm.last||null));
 function drawTakes(){ const ul=$("takes"); ul.textContent="";
-  for(const t of takes){ const li=document.createElement("li"); const s=document.createElement("span"); s.textContent=`Take ${t.n} · ${t.b.duration.toFixed(1)} s`;
+  for(const t of takes){ const li=document.createElement("li"); const s=document.createElement("span"); s.textContent=`#${t.n} · ${t.b.duration.toFixed(1)}s`;
     const p=document.createElement("button"); p.type="button"; p.className="small"; p.textContent="Play";
     p.onclick=async()=>{ await ensureAudio(false); const x=ctx.createBufferSource(); x.buffer=t.b; x.playbackRate.value=rateFor(+$("cents").value); x.connect(takeBus); x.start(); };
     const sv=document.createElement("button"); sv.type="button"; sv.className="small"; sv.textContent=t.saved?"Saved":"Save to library"; sv.disabled=!!t.saved;
     sv.onclick=async()=>{ const f=t.b.getChannelData(0); const c={id:Date.now()+"-t",name:`Take ${t.n} · ${(cur&&cur.name)||"loop"}`,type:"audio/wav",blob:wavBlob(f,t.b.sampleRate),dur:t.b.duration,created:Date.now(),start:0,end:t.b.duration};
       await putClip(c); t.saved=true; drawTakes(); refreshLib(); };
-    li.append(s,p,sv); ul.appendChild(li); }
+    const mc=document.createElement("canvas"); mc.className="mini"; li.append(mc,s,p,sv); ul.appendChild(li); drawTakeWave(mc,t.b); }
   $("clearTakes").disabled=!takes.length;
   if(!takes.length){ const li=document.createElement("li"); li.className="empty"; li.textContent="Takes from this session show up here."; ul.appendChild(li); }
 }
