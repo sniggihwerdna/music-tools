@@ -80,6 +80,14 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .takes li{display:flex;align-items:center;gap:8px;font-size:14px}
 .takes li span{flex:1;font:500 13px var(--mono);color:var(--muted)}
 .foot{font-size:12.5px;color:var(--muted)}
+.takesHead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.takesHead h3{margin:0}
+.quickOnly{display:none}
+.quickOnly a{color:var(--accent);font-weight:600}
+body.quick .loopOnly{display:none!important}
+body.quick .quickOnly{display:block}
+body.quick #qBtn,body.quick #qStop{font-size:22px;padding:20px 34px;min-height:72px}
+body.quick #qPhase{font-size:22px}
 </style>
 </head>
 <body>
@@ -88,12 +96,27 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <a href="./" style="display:inline-block;margin:0 0 10px;font:600 14px system-ui,-apple-system,sans-serif;color:#23675B;text-decoration:none">&lsaquo; All tools</a>
 
   <header>
-    <h1>Audio Mirror <span class="ver">v3</span></h1>
-    <p class="sub">Loop a phrase, sing with it, and hear just your take played straight back. Then the loop again, and again. Quick feedback for trying different sounds.</p>
+    <h1><span id="h1t">Audio Mirror</span> <span class="ver">v5</span></h1>
+    <p class="sub" id="sub">Sing, and hear your take played straight back, over and over. Use the quick mirror with no music, or loop a phrase from a file and sing with it.</p>
   </header>
 
   <section class="card">
-    <h2>1. Pick a loop</h2>
+    <h2 class="loopOnly">Quick mirror (no loop)</h2>
+    <div class="top">
+      <button id="qBtn" class="primary" type="button">Start singing</button>
+      <button id="qStop" type="button" hidden>Stop</button>
+      <div class="phase" id="qPhase">Ready</div>
+      <span class="hint" id="qTake"></span>
+    </div>
+    <div class="bar"><i id="qProg"></i></div>
+    <p class="msg" id="qMsg" hidden></p>
+    <label class="check"><input id="qBeep" type="checkbox" checked> Beep when each recording starts</label>
+    <p class="hint quickOnly"><a href="audio-mirror.html" id="toFull">Use a loop instead (full Audio Mirror)</a></p>
+    <p class="hint">Tap Start singing, sing a phrase, then tap Done. You hear it back, then it records again for the same length and plays that back, over and over until you tap Stop. The playback settings below (shift, repeats, pause, timing fix) apply here too.</p>
+  </section>
+
+  <section class="card loopOnly">
+    <h2>Loop mirror · 1. Pick a loop</h2>
     <div class="row">
       <label class="btn primary" for="fileIn">Add audio files<input id="fileIn" type="file" accept="audio/*,.m4a,.mp3,.wav,.aif,.aiff,.caf,.aac" multiple hidden></label>
       <button id="recLoopBtn" type="button">Record a loop from the mic</button>
@@ -104,7 +127,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <p class="hint">Files you add stay inside this app, so they're here next time. Tip: keep a folder like "Loops" in the Files app and add from it; you can select several at once. Recording from the mic works for capturing a phrase from another device playing a song.</p>
   </section>
 
-  <section class="card">
+  <section class="card loopOnly">
     <h2>2. Set the loop</h2>
     <div class="clip" id="clipName">No loop loaded yet</div>
     <canvas id="wave" aria-label="Waveform. Drag across it to choose the loop."></canvas>
@@ -123,23 +146,23 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   </section>
 
   <section class="card">
-    <h2>3. Mirror</h2>
-    <div class="top">
+    <h2 id="s3h">3. Mirror (and playback settings)</h2>
+    <div class="top loopOnly">
       <button id="mirBtn" class="primary" type="button" disabled>Start mirror</button>
       <div class="phase" id="phase">Ready</div>
       <span class="hint" id="takeNo"></span>
     </div>
-    <div class="bar"><i id="prog"></i></div>
-    <p class="msg" id="mirMsg" hidden></p>
+    <div class="bar loopOnly"><i id="prog"></i></div>
+    <p class="msg loopOnly" id="mirMsg" hidden></p>
     <div class="grid">
-      <div class="f"><label for="passes">Loop plays while you sing</label>
+      <div class="f loopOnly"><label for="passes">Loop plays while you sing</label>
         <select id="passes"><option value="1" selected>1 time</option><option value="2">2 times</option><option value="3">3 times</option><option value="4">4 times</option></select></div>
       <div class="f"><label for="takePlays">Your take plays back</label>
         <select id="takePlays"><option value="1" selected>1 time</option><option value="2">2 times</option></select></div>
-      <div class="f"><label for="under">Loop under your take: <b id="underVal" style="color:var(--fg)">20%</b></label><input id="under" type="range" min="0" max="100" step="5" value="20"></div>
+      <div class="f loopOnly"><label for="under">Loop under your take: <b id="underVal" style="color:var(--fg)">20%</b></label><input id="under" type="range" min="0" max="100" step="5" value="20"></div>
       <div class="f"><label for="gap">Pause between</label>
         <select id="gap"><option value="0">None</option><option value="0.5" selected>Half a second</option><option value="1">1 second</option><option value="2">2 seconds</option></select></div>
-      <div class="f"><label for="loopVol">Loop volume</label><input id="loopVol" type="range" min="0" max="1" step="0.01" value="0.8"></div>
+      <div class="f loopOnly"><label for="loopVol">Loop volume</label><input id="loopVol" type="range" min="0" max="1" step="0.01" value="0.8"></div>
       <div class="f"><label for="takeVol">Take volume</label><input id="takeVol" type="range" min="0" max="1.5" step="0.01" value="1"></div>
       <div class="f"><label for="cents">Shift your take: <b id="centsVal" style="color:var(--fg)">as sung</b></label><input id="cents" type="range" min="-50" max="50" step="1" value="0"></div>
       <div class="f"><label for="shiftMode">With a shift, play back</label>
@@ -147,11 +170,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <div class="f"><label for="latency">Timing fix: <b id="latVal" style="color:var(--fg)">100 ms</b></label><input id="latency" type="range" min="0" max="400" step="10" value="100"></div>
     </div>
     <label class="check"><input id="boost" type="checkbox" checked> Boost quiet takes to a steady level</label>
-    <h3>Recent takes</h3>
+    <div class="takesHead"><h3>Recent takes</h3><button id="clearTakes" class="small" type="button" disabled>Clear takes</button></div>
     <ul class="takes" id="takes"><li class="empty">Takes from this session show up here.</li></ul>
   </section>
 
-  <p class="foot">The first time, the app asks to use the microphone. Headphones give the cleanest takes; without them the loop leaks into your recording. If your take sounds early or late against the loop, move the timing fix.</p>
+  <p class="foot loopOnly">The first time, the app asks to use the microphone. Headphones give the cleanest takes; without them the loop leaks into your recording. If your take sounds early or late against the loop, move the timing fix.</p>
 </div>
 
 <script>
@@ -337,7 +360,7 @@ const mirror={on:false,timer:null,nodes:[],n:0,loopT0:null,loopEndT:0};
 function setPhase(cls,txt){ const p=$("phase"); p.className="phase "+cls; p.textContent=txt; }
 function progress(t0,t1){ cancelAnimationFrame(mirror.pr); const f=()=>{ if(!mirror.on) return; const v=clamp((ctx.currentTime-t0)/(t1-t0),0,1); $("prog").style.width=(v*100).toFixed(1)+"%"; if(v<1) mirror.pr=requestAnimationFrame(f); }; f(); }
 async function startMirror(){
-  if(!buf) return; await ensureAudio(true); stopPlay();
+  if(!buf) return; if(qm.on) qStop(); await ensureAudio(true); stopPlay();
   if(!(await ensureMic())){ micBlocked("mirMsg"); return; }
   $("mirMsg").hidden=true; mirror.on=true; mirror.n=0; cap.on=true; keepAwake(true);
   $("mirBtn").textContent="Stop mirror"; $("mirBtn").classList.add("rec"); startTick(); cycle();
@@ -378,9 +401,67 @@ function stopMirror(){
 }
 $("mirBtn").addEventListener("click",()=>mirror.on?stopMirror():startMirror());
 
+// ---------- quick mirror: no loop file; you set the length by tapping Done ----------
+const qm={on:false,stage:null,timer:null,nodes:[],n:0,len:0,t0:0,pr:null};
+function qPhase(cls,txt){ const p=$("qPhase"); p.className="phase "+cls; p.textContent=txt; }
+function qProg(t0,t1){ cancelAnimationFrame(qm.pr); const f=()=>{ if(!qm.on) return; const v=t1>t0?clamp((ctx.currentTime-t0)/(t1-t0),0,1):0; $("qProg").style.width=(v*100).toFixed(1)+"%"; if(v<1||qm.stage==="first") qm.pr=requestAnimationFrame(f); }; f(); }
+function beep(at){ const o=ctx.createOscillator(),g=ctx.createGain(); o.type="sine"; o.frequency.value=1320;
+  g.gain.setValueAtTime(0.0001,at); g.gain.exponentialRampToValueAtTime(0.25,at+0.004); g.gain.exponentialRampToValueAtTime(0.0001,at+0.09); o.connect(g); g.connect(comp); o.start(at); o.stop(at+0.12); }
+// plays one take with the shift settings; returns when playback ends and the label to show
+function playTakeAt(take,dur,ts,nodes){
+  const c=+$("cents").value, both=c!==0 && $("shiftMode").value==="both";
+  const rates=[]; for(let i=0;i<+$("takePlays").value;i++){ if(both) rates.push(1); rates.push(rateFor(c)); }
+  let tt=ts; for(const r of rates){ const b=ctx.createBufferSource(); b.buffer=take; b.playbackRate.value=r; b.connect(takeBus); b.start(tt); nodes.push(b); tt+=dur/r; }
+  const lbl = c===0 ? "Your take" : both ? `Your take, then ${c>0?"+":"−"}${Math.abs(c)}¢` : `Your take ${c>0?"+":"−"}${Math.abs(c)}¢`;
+  return {tEnd:tt,lbl};
+}
+async function qStart(){
+  if(mirror.on) stopMirror(); stopPlay();
+  await ensureAudio(true); if(!(await ensureMic())){ micBlocked("qMsg"); return; }
+  $("qMsg").hidden=true; qm.on=true; qm.n=0; cap.on=true; keepAwake(true); $("qStop").hidden=false;
+  qm.stage="first"; qRecordStart();
+}
+function qRecordStart(){
+  if(!qm.on) return;
+  const now=ctx.currentTime; if($("qBeep").checked) beep(now+0.05);
+  qm.t0=now+0.25; qm.n++; $("qTake").textContent="Take "+qm.n;
+  if(qm.stage==="first"){ qPhase("sing","Sing now, then tap Done"); $("qBtn").textContent="Done"; qProg(qm.t0,qm.t0); }
+  else { qPhase("sing","Sing now"); qProg(qm.t0,qm.t0+qm.len); const t0=qm.t0;
+    qm.timer=setTimeout(()=>qFinish(t0),Math.max(0,(t0+qm.len+(+$("latency").value/1000)+0.2-ctx.currentTime)*1000)); }
+}
+function qDone(){
+  if(!qm.on || qm.stage!=="first") return;
+  qm.len=Math.max(0.3,ctx.currentTime-qm.t0); qm.stage="cycle"; $("qBtn").hidden=true;
+  const t0=qm.t0; qPhase("wait","…"); qm.timer=setTimeout(()=>qFinish(t0),(+$("latency").value/1000+0.2)*1000);
+}
+function qFinish(t0){
+  if(!qm.on) return;
+  const lat=+$("latency").value/1000, len=qm.len;
+  let f=cap.extract(t0+lat,t0+lat+len); if($("boost").checked) f=normalize(f);
+  const take=toBuffer(f); addTake(take,qm.n);
+  const gap=+$("gap").value, ts=ctx.currentTime+Math.min(gap,0.5)+0.05;
+  qm.nodes=[]; const {tEnd,lbl}=playTakeAt(take,len,ts,qm.nodes);
+  setTimeout(()=>{ if(qm.on){ qPhase("take",lbl); qProg(ts,tEnd); } },Math.max(0,(ts-ctx.currentTime)*1000));
+  qm.timer=setTimeout(()=>{ if(!qm.on) return; if(gap>0) qPhase("wait","Get ready"); qm.timer=setTimeout(qRecordStart,gap*1000); },Math.max(0,(tEnd-ctx.currentTime)*1000));
+}
+function qStop(){
+  qm.on=false; qm.stage=null; clearTimeout(qm.timer); cancelAnimationFrame(qm.pr);
+  for(const n of qm.nodes){ try{ n.stop(); }catch(e){} } qm.nodes=[];
+  if(!loopRec && !mirror.on) cap.on=false; keepAwake(false);
+  $("qBtn").hidden=false; $("qBtn").textContent="Start singing"; $("qStop").hidden=true; qPhase("","Ready"); $("qProg").style.width="0%"; $("qTake").textContent="";
+}
+$("qBtn").addEventListener("click",()=>{ if(!qm.on) qStart(); else qDone(); });
+$("qStop").addEventListener("click",qStop);
+const SUB=$("sub").textContent;
+function applyView(){ const q=location.hash==="#quick"; document.body.classList.toggle("quick",q);
+  $("s3h").textContent=q?"Playback settings":"3. Mirror (and playback settings)"; document.title=q?"Quick Mirror":"Audio Mirror"; $("h1t").textContent=document.title;
+  $("sub").textContent=q?"Tap Start singing, tap Done. It plays your take back, then records again for the same length, over and over.":SUB; }
+window.addEventListener("hashchange",applyView); applyView();
+
 // recent takes (this session only; save one to keep it)
 const takes=[];
 function addTake(b,n){ takes.unshift({b,n,at:new Date()}); if(takes.length>8) takes.pop(); drawTakes(); }
+$("clearTakes").addEventListener("click",()=>{ takes.length=0; drawTakes(); });
 function drawTakes(){ const ul=$("takes"); ul.textContent="";
   for(const t of takes){ const li=document.createElement("li"); const s=document.createElement("span"); s.textContent=`Take ${t.n} · ${t.b.duration.toFixed(1)} s`;
     const p=document.createElement("button"); p.type="button"; p.className="small"; p.textContent="Play";
@@ -389,6 +470,7 @@ function drawTakes(){ const ul=$("takes"); ul.textContent="";
     sv.onclick=async()=>{ const f=t.b.getChannelData(0); const c={id:Date.now()+"-t",name:`Take ${t.n} · ${(cur&&cur.name)||"loop"}`,type:"audio/wav",blob:wavBlob(f,t.b.sampleRate),dur:t.b.duration,created:Date.now(),start:0,end:t.b.duration};
       await putClip(c); t.saved=true; drawTakes(); refreshLib(); };
     li.append(s,p,sv); ul.appendChild(li); }
+  $("clearTakes").disabled=!takes.length;
   if(!takes.length){ const li=document.createElement("li"); li.className="empty"; li.textContent="Takes from this session show up here."; ul.appendChild(li); }
 }
 
