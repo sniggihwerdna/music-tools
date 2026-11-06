@@ -77,7 +77,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <a href="./" style="display:inline-block;margin:0 0 10px;font:600 14px system-ui,-apple-system,sans-serif;color:#23675B;text-decoration:none">&lsaquo; All tools</a>
 
   <header>
-    <h1>Vocal Exercise Patterns <span id="ver" style="font:600 12px var(--mono);color:var(--muted);vertical-align:middle;border:1px solid var(--line);border-radius:6px;padding:2px 6px">v4</span></h1>
+    <h1>Vocal Exercise Patterns <span id="ver" style="font:600 12px var(--mono);color:var(--muted);vertical-align:middle;border:1px solid var(--line);border-radius:6px;padding:2px 6px">v5</span></h1>
     <p class="sub">A random string of notes, repeated, then moved by an interval, all the way up and back down. Then a count-off and a new random string. The tempo ramps from the start BPM to the peak and back over each run.</p>
   </header>
 
@@ -108,8 +108,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <div class="f"><label for="low">Lowest note</label><select id="low"></select></div>
       <div class="f"><label for="high">Highest note</label><select id="high"></select></div>
       <div class="f wide"><label for="leap">Average distance between notes: <b id="leapVal" style="color:var(--fg)"></b></label>
-        <input id="leap" type="range" min="1" max="12" step="1" value="4">
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>Steps</span><span>Wide leaps</span></div></div>
+        <input id="leap" type="range" min="1" max="11" step="1" value="4">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>Steps</span><span>Wide leaps</span></div>
+        <span style="font-size:12px;color:var(--muted)">No step larger than a major 7th; each string stays within an octave.</span></div>
       <div class="f check"><input id="noRepeat" type="checkbox" checked><label for="noRepeat">No same note twice in a row</label></div>
     </fieldset>
 
@@ -220,6 +221,8 @@ leapLabel(); $("leap").addEventListener("input",leapLabel);
 const nameOf = m => { const k=+$("key").value; const t=FLAT_KEYS.has(k)?FLAT:SHARP; return t[((m%12)+12)%12]+(Math.floor(m/12)-1); };
 
 let seq=[];
+// limits for singable patterns: no single step bigger than a major 7th, whole string within an octave
+const MAX_STEP=11, MAX_SPAN=12;
 function makeNotes(){
   let lo=+$("low").value, hi=+$("high").value; if(lo>hi)[lo,hi]=[hi,lo];
   const key=+$("key").value, sc=SCALES[$("scale").value];
@@ -229,13 +232,16 @@ function makeNotes(){
   const avg=+$("leap").value, noRep=$("noRepeat").checked && pool.length>1;
   out.push(pool[Math.floor(Math.random()*pool.length)]);
   for(let i=1;i<n;i++){
-    const prev=out[i-1];
+    const prev=out[i-1], mn=Math.min(...out), mx=Math.max(...out);
+    // notes that keep the step and the whole string within the limits
+    const fits=m=>Math.abs(m-prev)<=MAX_STEP && Math.max(mx,m)-Math.min(mn,m)<=MAX_SPAN;
     // distance: random around the chosen average (exponential spread, at least 1)
-    const d=Math.max(1, Math.round(-avg*Math.log(1-Math.random()*0.999)));
+    const d=Math.min(MAX_STEP,Math.max(1, Math.round(-avg*Math.log(1-Math.random()*0.999))));
     let dir=Math.random()<0.5?-1:1; let target=prev+dir*d;
-    if(target>hi||target<lo){ dir=-dir; target=prev+dir*d; }
-    target=clamp(target,lo,hi);
-    let cands=pool.filter(m=>!(noRep&&m===prev));
+    if(!fits(target)||target>hi||target<lo){ dir=-dir; target=prev+dir*d; }
+    let cands=pool.filter(m=>!(noRep&&m===prev) && fits(m));
+    if(!cands.length) cands=pool.filter(m=>!(noRep&&m===prev) && Math.abs(m-prev)<=MAX_STEP);
+    if(!cands.length) cands=pool;
     let best=Infinity, picks=[];
     for(const m of cands){ const e=Math.abs(m-target); if(e<best){best=e;picks=[m];} else if(e===best) picks.push(m); }
     out.push(picks[Math.floor(Math.random()*picks.length)]);

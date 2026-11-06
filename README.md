@@ -3,7 +3,9 @@
 Tap a link to open the tool. These are the links to share.
 
 - **All tools:** https://sniggihwerdna.github.io/music-tools/
+- **Audio Mirror:** https://sniggihwerdna.github.io/music-tools/audio-mirror.html
 - **Vocal Exercise Patterns:** https://sniggihwerdna.github.io/music-tools/vocal-exercise-patterns.html
+- **Wide Interval Trainer:** https://sniggihwerdna.github.io/music-tools/wide-interval-trainer.html
 - **Rhythm Trainer:** https://sniggihwerdna.github.io/music-tools/rhythm-trainer.html
 - **Advanced Tempo Trainer (Higgins model):** https://sniggihwerdna.github.io/music-tools/advanced-tempo-trainer.html
 - **Odd Meter Trainer:** https://sniggihwerdna.github.io/music-tools/odd-meter-trainer.html

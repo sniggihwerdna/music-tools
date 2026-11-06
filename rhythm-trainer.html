@@ -89,7 +89,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <a href="./" style="display:inline-block;margin:0 0 10px;font:600 14px system-ui,-apple-system,sans-serif;color:#23675B;text-decoration:none">&lsaquo; All tools</a>
 
   <header>
-    <h1>Rhythm Trainer <span style="font:600 12px var(--mono);color:var(--muted);vertical-align:middle;border:1px solid var(--line);border-radius:6px;padding:2px 6px">v4</span></h1>
+    <h1>Rhythm Trainer <span style="font:600 12px var(--mono);color:var(--muted);vertical-align:middle;border:1px solid var(--line);border-radius:6px;padding:2px 6px">v5</span></h1>
     <p class="sub">A random rhythm plays over a metronome for a set number of bars, then the metronome keeps going alone so you can play it back.</p>
   </header>
 
@@ -155,6 +155,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <div class="f"><label for="clickVol">Beat volume</label><input id="clickVol" type="range" min="0" max="1" step="0.01" value="0.55"></div>
       <div class="f"><label for="patVol">Rhythm volume</label><input id="patVol" type="range" min="0" max="1" step="0.01" value="0.85"></div>
       <div class="f check"><input id="accent1" type="checkbox" checked><label for="accent1">Accent beat 1 on the metronome</label></div>
+      <div class="f check"><input id="finalClick" type="checkbox" checked><label for="finalClick">End the last repeat with a click on the next 1</label></div>
       <div class="f check"><input id="subClick" type="checkbox"><label for="subClick">Metronome also clicks eighth notes</label></div>
       <div class="f check"><input id="hideRest" type="checkbox"><label for="hideRest">Hide the rhythm during rest bars</label></div>
     </fieldset>
@@ -244,6 +245,12 @@ $("clickVol").addEventListener("input",()=>{ if(clickBus) clickBus.gain.setTarge
 $("patVol").addEventListener("input",()=>{ if(patBus) patBus.gain.setTargetAtTime(+$("patVol").value,ctx.currentTime,.02); });
 
 function env(g,at,peak,decay){ g.gain.setValueAtTime(0.0001,at); g.gain.exponentialRampToValueAtTime(peak,at+0.002); g.gain.exponentialRampToValueAtTime(0.0001,at+decay); }
+// the "landing" sound at the end of the last repeat: a bright two-note ding, distinct from the metronome
+function landing(at){
+  [1760,2637].forEach((f,i)=>{ const o=ctx.createOscillator(),g=ctx.createGain(); o.type="sine"; o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,at); g.gain.exponentialRampToValueAtTime(i?0.25:0.55,at+0.003); g.gain.exponentialRampToValueAtTime(0.0001,at+0.35);
+    o.connect(g); g.connect(clickBus); o.start(at); o.stop(at+0.4); });
+}
 function click(at,kind,level=1){ // kind: 'one' | 'beat' | 'sub'
   const o=ctx.createOscillator(),g=ctx.createGain();
   o.type="sine"; o.frequency.value=kind==="one"?1760:kind==="beat"?1320:990;
@@ -280,10 +287,14 @@ function buildCycle(){
   if(firstCycle) for(let i=0;i<s.countIn;i++) q.push({type:"count",i,of:s.countIn});
   for(let i=0;i<s.playBars;i++) q.push({type:"play",i,of:s.playBars});
   for(let i=0;i<s.restBars;i++) q.push({type:"rest",i,of:s.restBars});
+  // last repeat of this rhythm: finish on sound, with a click on the next 1, before anything new starts
+  const last = s.rounds>0 && roundsDone===s.rounds-1;
+  if(last && $("finalClick").checked) q.push({type:"land",i:0,of:1});
   firstCycle=false; return q;
 }
 function scheduleBar(bar){
   const s=settings(), beatDur=60/bpm, t=nextBarTime;
+  if(bar.type==="land"){ landing(t); visQueue.push({t, kind:"bar", bar, round:roundNo, bpm}); nextBarTime=t+s.beats*beatDur; return; }
   const pBar = pattern[(bar.type==="play" ? bar.i : 0) % pattern.length];
   visQueue.push({t, kind:"bar", bar, round:roundNo});
   for(let b=0;b<s.beats;b++){
@@ -327,8 +338,8 @@ let curBar=null;
 function clearOn(){ document.querySelectorAll(".slot.on").forEach(e=>e.classList.remove("on")); document.querySelectorAll(".beat.now").forEach(e=>e.classList.remove("now")); }
 function show(v){
   if(v.kind==="bar"){
-    curBar=v.bar; const ph=$("phase"); ph.className="phase "+v.bar.type;
-    ph.textContent=v.bar.type==="play"?"Listen / play":v.bar.type==="rest"?"Your turn":"Count-in";
+    curBar=v.bar; const ph=$("phase"); ph.className="phase "+(v.bar.type==="land"?"count":v.bar.type);
+    ph.textContent=v.bar.type==="land"?"End – on 1?":v.bar.type==="play"?"Listen / play":v.bar.type==="rest"?"Your turn":"Count-in";
     $("barOut").textContent=`${v.bar.i+1} / ${v.bar.of}`;
     const s=settings(); $("roundOut").textContent=s.rounds?`${v.round} / ${s.rounds}`:String(v.round);
     $("grid").style.visibility=(v.bar.type==="rest"&&$("hideRest").checked)?"hidden":"visible";

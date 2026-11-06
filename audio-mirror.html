@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Music Tools">
+<meta name="theme-color" content="#23675B">
+<title>Audio Mirror</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one column in three steps: pick a loop (library), set the loop (waveform), mirror (record / play back) */
+:root{
+  --bg:#F2F4F6; --surface:#FFFFFF; --fg:#16202A; --muted:#5B6875; --line:#D6DDE4;
+  --accent:#23675B; --accent-fg:#FFFFFF; --brass:#B9812A; --chip:#E7ECF0; --rest:#7A5AA8; --rec:#C0392B;
+  --wave:#8FA3B3; --sel:rgba(35,103,91,.18);
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"Instrument Sans", "Helvetica Neue", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0F1418; --surface:#172027; --fg:#E5EAEE; --muted:#92A0AC; --line:#2A353F;
+  --accent:#5FB3A3; --accent-fg:#0C1A17; --brass:#E2B157; --chip:#212C35; --rest:#A98BD6; --rec:#E0645A;
+  --wave:#5E7384; --sel:rgba(95,179,163,.22); color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0F1418; --surface:#172027; --fg:#E5EAEE; --muted:#92A0AC; --line:#2A353F;
+  --accent:#5FB3A3; --accent-fg:#0C1A17; --brass:#E2B157; --chip:#212C35; --rest:#A98BD6; --rec:#E0645A;
+  --wave:#5E7384; --sel:rgba(95,179,163,.22); color-scheme:dark }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,6vw,36px);line-height:1.05;margin:0;letter-spacing:-.01em}
+h2{font-family:var(--display);font-weight:700;font-size:18px;margin:0}
+h3{font-family:var(--display);font-weight:700;font-size:15px;margin:4px 0 0}
+.ver{font:600 12px var(--mono);color:var(--muted);vertical-align:middle;border:1px solid var(--line);border-radius:6px;padding:2px 6px}
+.sub{color:var(--muted);margin:4px 0 0;max-width:60ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,.btn{font:600 15px/1 var(--body);border-radius:999px;padding:11px 16px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;min-height:44px;display:inline-flex;align-items:center;gap:6px}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible, input:focus-visible, select:focus-visible, .btn:focus-within{outline:2px solid var(--brass);outline-offset:2px}
+button.primary,.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+button.rec{background:var(--rec);color:#fff;border-color:var(--rec)}
+button.small{min-height:34px;padding:6px 11px;font-size:13px}
+button:active{transform:translateY(1px)}
+input[type=search],select,input[type=number]{font:500 16px var(--body);padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);width:100%;min-height:42px}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+.msg{font-size:13.5px;color:var(--rec);margin:0}
+.lib{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:280px;overflow:auto}
+.lib li{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:6px 6px 6px 12px;background:var(--bg)}
+.lib li.cur{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.lib .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;background:none;border:0;padding:6px 0;min-height:0;font:500 15px var(--body);text-align:left;justify-content:flex-start}
+.lib .du{font:500 12px var(--mono);color:var(--muted)}
+.empty{color:var(--muted);font-size:14px;padding:8px 0}
+.clip{font-weight:600}
+canvas{width:100%;height:110px;display:block;border-radius:10px;background:var(--bg);touch-action:none;cursor:crosshair}
+.nudge{display:grid;grid-template-columns:auto 1fr auto auto;gap:6px 8px;align-items:center;font-size:14px}
+.nudge b{font:600 15px var(--mono);font-variant-numeric:tabular-nums}
+.top{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.phase{font-family:var(--display);font-weight:700;font-size:19px;line-height:1.1;padding:9px 14px;border-radius:10px;background:var(--chip);text-align:center;min-width:9em}
+.phase.sing{background:var(--rec);color:#fff}
+.phase.take{background:var(--rest);color:#fff}
+.phase.wait{background:var(--brass);color:#1A1206}
+.bar{height:5px;background:var(--chip);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f label{font-size:12.5px;color:var(--muted);font-weight:500}
+.check{display:flex;align-items:center;gap:8px;font-size:14px}
+.check input{width:20px;height:20px;accent-color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.takes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.takes li{display:flex;align-items:center;gap:8px;font-size:14px}
+.takes li span{flex:1;font:500 13px var(--mono);color:var(--muted)}
+.foot{font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <a href="./" style="display:inline-block;margin:0 0 10px;font:600 14px system-ui,-apple-system,sans-serif;color:#23675B;text-decoration:none">&lsaquo; All tools</a>
+
+  <header>
+    <h1>Audio Mirror <span class="ver">v3</span></h1>
+    <p class="sub">Loop a phrase, sing with it, and hear just your take played straight back. Then the loop again, and again. Quick feedback for trying different sounds.</p>
+  </header>
+
+  <section class="card">
+    <h2>1. Pick a loop</h2>
+    <div class="row">
+      <label class="btn primary" for="fileIn">Add audio files<input id="fileIn" type="file" accept="audio/*,.m4a,.mp3,.wav,.aif,.aiff,.caf,.aac" multiple hidden></label>
+      <button id="recLoopBtn" type="button">Record a loop from the mic</button>
+    </div>
+    <p class="msg" id="libMsg" hidden></p>
+    <input id="search" type="search" placeholder="Search your loops" autocomplete="off">
+    <ul class="lib" id="lib"></ul>
+    <p class="hint">Files you add stay inside this app, so they're here next time. Tip: keep a folder like "Loops" in the Files app and add from it; you can select several at once. Recording from the mic works for capturing a phrase from another device playing a song.</p>
+  </section>
+
+  <section class="card">
+    <h2>2. Set the loop</h2>
+    <div class="clip" id="clipName">No loop loaded yet</div>
+    <canvas id="wave" aria-label="Waveform. Drag across it to choose the loop."></canvas>
+    <div class="row">
+      <button id="playBtn" type="button" disabled>Play</button>
+      <button id="setStart" type="button" disabled>Set start here</button>
+      <button id="setEnd" type="button" disabled>Set end here</button>
+      <button id="previewBtn" type="button" disabled>Loop preview</button>
+    </div>
+    <div class="nudge">
+      <span>Start</span><b id="startOut">–</b><button class="small" type="button" data-edge="start" data-d="-0.05">−</button><button class="small" type="button" data-edge="start" data-d="0.05">+</button>
+      <span>End</span><b id="endOut">–</b><button class="small" type="button" data-edge="end" data-d="-0.05">−</button><button class="small" type="button" data-edge="end" data-d="0.05">+</button>
+      <span>Length</span><b id="lenOut">–</b><span></span><span></span>
+    </div>
+    <p class="hint">Tap Play, then Set start and Set end as the phrase goes by. Or drag across the waveform. Tap the waveform to move the play point. − and + nudge an edge by 0.05 seconds.</p>
+  </section>
+
+  <section class="card">
+    <h2>3. Mirror</h2>
+    <div class="top">
+      <button id="mirBtn" class="primary" type="button" disabled>Start mirror</button>
+      <div class="phase" id="phase">Ready</div>
+      <span class="hint" id="takeNo"></span>
+    </div>
+    <div class="bar"><i id="prog"></i></div>
+    <p class="msg" id="mirMsg" hidden></p>
+    <div class="grid">
+      <div class="f"><label for="passes">Loop plays while you sing</label>
+        <select id="passes"><option value="1" selected>1 time</option><option value="2">2 times</option><option value="3">3 times</option><option value="4">4 times</option></select></div>
+      <div class="f"><label for="takePlays">Your take plays back</label>
+        <select id="takePlays"><option value="1" selected>1 time</option><option value="2">2 times</option></select></div>
+      <div class="f"><label for="under">Loop under your take: <b id="underVal" style="color:var(--fg)">20%</b></label><input id="under" type="range" min="0" max="100" step="5" value="20"></div>
+      <div class="f"><label for="gap">Pause between</label>
+        <select id="gap"><option value="0">None</option><option value="0.5" selected>Half a second</option><option value="1">1 second</option><option value="2">2 seconds</option></select></div>
+      <div class="f"><label for="loopVol">Loop volume</label><input id="loopVol" type="range" min="0" max="1" step="0.01" value="0.8"></div>
+      <div class="f"><label for="takeVol">Take volume</label><input id="takeVol" type="range" min="0" max="1.5" step="0.01" value="1"></div>
+      <div class="f"><label for="cents">Shift your take: <b id="centsVal" style="color:var(--fg)">as sung</b></label><input id="cents" type="range" min="-50" max="50" step="1" value="0"></div>
+      <div class="f"><label for="shiftMode">With a shift, play back</label>
+        <select id="shiftMode"><option value="shift" selected>Shifted only</option><option value="both">As sung, then shifted</option></select></div>
+      <div class="f"><label for="latency">Timing fix: <b id="latVal" style="color:var(--fg)">100 ms</b></label><input id="latency" type="range" min="0" max="400" step="10" value="100"></div>
+    </div>
+    <label class="check"><input id="boost" type="checkbox" checked> Boost quiet takes to a steady level</label>
+    <h3>Recent takes</h3>
+    <ul class="takes" id="takes"><li class="empty">Takes from this session show up here.</li></ul>
+  </section>
+
+  <p class="foot">The first time, the app asks to use the microphone. Headphones give the cleanest takes; without them the loop leaks into your recording. If your take sounds early or late against the loop, move the timing fix.</p>
+</div>
+
+<script>
+(() => {
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const fmt=s=>(Math.round(s*100)/100).toFixed(2)+" s";
+const LOOKAHEAD=()=>document.hidden?8:0.2;
+let wakeLock=null;
+async function keepAwake(on){ try{
+  if(on && "wakeLock" in navigator && !wakeLock){ wakeLock=await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release",()=>{ wakeLock=null; }); }
+  else if(!on && wakeLock){ await wakeLock.release(); wakeLock=null; }
+}catch(e){} }
+
+// ---------- audio ----------
+let ctx=null, comp=null, loopBus=null, takeBus=null, silentEl=null;
+function silentWavURL(){
+  const sr=8000,n=4000,b=new ArrayBuffer(44+n*2),v=new DataView(b),w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+  w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVE");w(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+  return URL.createObjectURL(new Blob([b],{type:"audio/wav"}));
+}
+async function ensureAudio(rec){
+  try{ if(navigator.audioSession) navigator.audioSession.type = rec ? "play-and-record" : "playback"; }catch(e){}
+  try{ if(!silentEl){ silentEl=new Audio(silentWavURL()); silentEl.loop=true; } await silentEl.play(); }catch(e){}
+  if(!ctx){
+    ctx=new (window.AudioContext||window.webkitAudioContext)();
+    comp=ctx.createDynamicsCompressor(); comp.threshold.value=-6; comp.ratio.value=4; comp.connect(ctx.destination);
+    loopBus=ctx.createGain(); loopBus.gain.value=+$("loopVol").value; loopBus.connect(comp);
+    takeBus=ctx.createGain(); takeBus.gain.value=+$("takeVol").value; takeBus.connect(comp);
+  }
+  if(ctx.state!=="running") await ctx.resume();
+}
+$("loopVol").addEventListener("input",()=>{ if(loopBus) loopBus.gain.setTargetAtTime(+$("loopVol").value,ctx.currentTime,.02); });
+$("takeVol").addEventListener("input",()=>{ if(takeBus) takeBus.gain.setTargetAtTime(+$("takeVol").value,ctx.currentTime,.02); });
+$("latency").addEventListener("input",()=>{ $("latVal").textContent=$("latency").value+" ms"; });
+const rateFor=c=>Math.pow(2,c/1200);
+$("cents").addEventListener("input",()=>{ const c=+$("cents").value; $("centsVal").textContent= c===0?"as sung": (c>0?"+":"−")+Math.abs(c)+" cent"+(Math.abs(c)===1?"":"s")+(c>0?" sharper":" flatter"); });
+$("under").addEventListener("input",()=>{ const v=+$("under").value; $("underVal").textContent=v?v+"%":"off (voice only)"; });
+function decode(arr){ return new Promise((res,rej)=>{ try{ const p=ctx.decodeAudioData(arr,res,rej); if(p&&p.then) p.then(res,rej); }catch(e){ rej(e); } }); }
+
+// ---------- microphone capture ----------
+// Keeps the last couple of minutes of mic audio with timestamps, so any time window can be cut out exactly.
+let micStream=null, proc=null;
+const cap={chunks:[], on:false,
+  push(d,t){ this.chunks.push({t,d}); const cut=t-150; while(this.chunks.length && this.chunks[0].t<cut) this.chunks.shift(); },
+  extract(a,b){ const sr=ctx.sampleRate, n=Math.max(1,Math.round((b-a)*sr)), out=new Float32Array(n);
+    for(const c of this.chunks){ const off=Math.round((c.t-a)*sr); if(off>n||off+c.d.length<0) continue;
+      for(let i=0;i<c.d.length;i++){ const j=off+i; if(j>=0&&j<n) out[j]=c.d[i]; } }
+    return out; }
+};
+async function ensureMic(){
+  if(micStream) return true;
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ return false; }
+  try{ micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}); }
+  catch(e){ return false; }
+  const src=ctx.createMediaStreamSource(micStream); const BS=2048;
+  proc=ctx.createScriptProcessor(BS,1,1);
+  proc.onaudioprocess=e=>{ if(!cap.on) return; const d=new Float32Array(e.inputBuffer.getChannelData(0)); cap.push(d, ctx.currentTime - BS/ctx.sampleRate); };
+  const z=ctx.createGain(); z.gain.value=0; src.connect(proc); proc.connect(z); z.connect(ctx.destination);
+  return true;
+}
+function toBuffer(f32){ const b=ctx.createBuffer(1,f32.length,ctx.sampleRate); b.copyToChannel?b.copyToChannel(f32,0):b.getChannelData(0).set(f32); return b; }
+function normalize(f32){ let pk=0; for(const v of f32) pk=Math.max(pk,Math.abs(v)); if(pk>0.0005 && pk<0.9){ const g=Math.min(12,0.9/pk); for(let i=0;i<f32.length;i++) f32[i]*=g; } return f32; }
+function wavBlob(f32,sr){ const n=f32.length,b=new ArrayBuffer(44+n*2),v=new DataView(b),w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+  w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVE");w(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++) v.setInt16(44+i*2,Math.max(-1,Math.min(1,f32[i]))*32767,true); return new Blob([b],{type:"audio/wav"}); }
+function micBlocked(where){ const m=$(where); m.hidden=false; m.textContent="The microphone isn't available. Allow microphone access for this app (on iPhone: Settings → Safari → Microphone, or the prompt when it appears), then try again."; }
+
+// ---------- library (kept in the app's own storage) ----------
+const mem=new Map(); let dbp=null;
+function db(){ if(dbp) return dbp; dbp=new Promise(res=>{ try{ const r=indexedDB.open("audio-mirror",1);
+  r.onupgradeneeded=()=>r.result.createObjectStore("clips",{keyPath:"id"}); r.onsuccess=()=>res(r.result); r.onerror=()=>res(null); }catch(e){ res(null); } }); return dbp; }
+async function store(mode,fn){ const d=await db(); if(!d) return null; return new Promise(res=>{ try{ const tx=d.transaction("clips",mode), st=tx.objectStore("clips"); const r=fn(st); tx.oncomplete=()=>res(r&&r.result); tx.onerror=()=>res(null); }catch(e){ res(null); } }); }
+async function allClips(){ const r=await store("readonly",st=>st.getAll()); const list=r||[...mem.values()]; return list.sort((a,b)=>b.created-a.created); }
+async function putClip(c){ mem.set(c.id,c); await store("readwrite",st=>st.put(c)); }
+async function delClip(id){ mem.delete(id); await store("readwrite",st=>st.delete(id)); }
+
+let clips=[], cur=null, buf=null, loopStart=0, loopEnd=0, pending=null;
+async function refreshLib(){ clips=await allClips(); drawLib(); }
+function drawLib(){
+  const q=$("search").value.trim().toLowerCase(), ul=$("lib"); ul.textContent="";
+  const list=clips.filter(c=>!q||c.name.toLowerCase().includes(q));
+  if(!list.length){ const li=document.createElement("li"); li.className="empty"; li.style.border="0"; li.style.background="none";
+    li.textContent= clips.length ? "No loops match that search." : "No loops yet. Add audio files or record one from the mic."; ul.appendChild(li); return; }
+  for(const c of list){
+    const li=document.createElement("li"); if(cur&&cur.id===c.id) li.className="cur";
+    const nm=document.createElement("button"); nm.type="button"; nm.className="nm"; nm.textContent=c.name; nm.title=c.name; nm.onclick=()=>loadClip(c);
+    const du=document.createElement("span"); du.className="du"; du.textContent=c.dur?fmt(c.dur):"";
+    const del=document.createElement("button"); del.type="button"; del.className="small"; del.textContent="Delete";
+    del.onclick=async()=>{ if(pending!==c.id){ pending=c.id; del.textContent="Tap again"; setTimeout(()=>{ if(pending===c.id){ pending=null; del.textContent="Delete"; } },2500); return; }
+      pending=null; await delClip(c.id); if(cur&&cur.id===c.id){ cur=null; buf=null; resetEditor(); } refreshLib(); };
+    li.append(nm,du,del); ul.appendChild(li);
+  }
+}
+$("search").addEventListener("input",drawLib);
+$("fileIn").addEventListener("change",async e=>{
+  const files=[...e.target.files]; e.target.value=""; if(!files.length) return;
+  await ensureAudio(false); let last=null, bad=0;
+  for(const f of files){
+    try{ const ab=await f.arrayBuffer(); const b=await decode(ab.slice(0));
+      const c={id:Date.now()+"-"+Math.random().toString(36).slice(2,7), name:f.name.replace(/\.[^.]+$/,""), type:f.type||"audio/mp4", blob:f, dur:b.duration, created:Date.now(), start:0, end:Math.min(b.duration, b.duration<=15?b.duration:4)};
+      await putClip(c); last={c,b}; }
+    catch(err){ bad++; }
+  }
+  const m=$("libMsg"); m.hidden=!bad; if(bad) m.textContent=`${bad} file${bad>1?"s":""} couldn't be read as audio. Try MP3, M4A, WAV or AIFF.`;
+  await refreshLib(); if(last) setClip(last.c,last.b);
+});
+async function loadClip(c){
+  await ensureAudio(false); stopPlay(); if(mirror.on) stopMirror();
+  try{ const ab=await c.blob.arrayBuffer(); const b=await decode(ab); setClip(c,b); }
+  catch(e){ const m=$("libMsg"); m.hidden=false; m.textContent=`"${c.name}" couldn't be opened.`; }
+}
+function setClip(c,b){ cur=c; buf=b; loopStart=clamp(c.start||0,0,b.duration); loopEnd=clamp(c.end||b.duration,0,b.duration); if(loopEnd-loopStart<0.1){ loopStart=0; loopEnd=b.duration; }
+  playhead=loopStart; $("clipName").textContent=c.name; peaks=null; ["playBtn","setStart","setEnd","previewBtn","mirBtn"].forEach(id=>$(id).disabled=false); updateEdges(); drawLib(); drawWave(); }
+function resetEditor(){ $("clipName").textContent="No loop loaded yet"; ["playBtn","setStart","setEnd","previewBtn","mirBtn"].forEach(id=>$(id).disabled=true); peaks=null; drawWave(); $("startOut").textContent=$("endOut").textContent=$("lenOut").textContent="–"; }
+let saveT=null;
+function updateEdges(){ $("startOut").textContent=fmt(loopStart); $("endOut").textContent=fmt(loopEnd); $("lenOut").textContent=fmt(loopEnd-loopStart);
+  if(cur){ cur.start=loopStart; cur.end=loopEnd; clearTimeout(saveT); saveT=setTimeout(()=>putClip(cur),400); } }
+
+// record a loop from the mic
+let loopRec=null;
+$("recLoopBtn").addEventListener("click",async()=>{
+  if(loopRec){ // stop
+    const r=loopRec; loopRec=null; $("recLoopBtn").textContent="Record a loop from the mic"; $("recLoopBtn").classList.remove("rec");
+    const t1=ctx.currentTime; setTimeout(async()=>{
+      const f=normalize(cap.extract(r.t0,t1)); if(!mirror.on) cap.on=false;
+      const name="Mic loop "+new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+      const blob=wavBlob(f,ctx.sampleRate); const c={id:Date.now()+"-m",name,type:"audio/wav",blob,dur:f.length/ctx.sampleRate,created:Date.now(),start:0,end:f.length/ctx.sampleRate};
+      await putClip(c); await refreshLib(); setClip(c,toBuffer(f)); },250);
+    return;
+  }
+  await ensureAudio(true); if(!(await ensureMic())){ micBlocked("libMsg"); return; }
+  $("libMsg").hidden=true; cap.on=true; loopRec={t0:ctx.currentTime}; $("recLoopBtn").textContent="Stop recording"; $("recLoopBtn").classList.add("rec");
+});
+
+// ---------- waveform + loop editing ----------
+let peaks=null, playhead=0, playSrc=null, playT0=0, playFrom=0, previewing=false;
+function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function drawWave(){
+  const c=$("wave"), dpr=window.devicePixelRatio||1, W=c.clientWidth, H=c.clientHeight; c.width=W*dpr; c.height=H*dpr;
+  const g=c.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W,H);
+  if(!buf){ g.fillStyle=css("--muted"); g.font="13px "+css("--body"); g.fillText("Pick a loop to see it here",12,H/2+4); return; }
+  if(!peaks||peaks.length!==W){ const d=buf.getChannelData(0), step=d.length/W; peaks=new Float32Array(W);
+    for(let x=0;x<W;x++){ let m=0; const a=Math.floor(x*step), b=Math.min(d.length,Math.floor((x+1)*step)); for(let i=a;i<b;i+=8) m=Math.max(m,Math.abs(d[i])); peaks[x]=m; }
+    let mx=0; for(const p of peaks) mx=Math.max(mx,p); if(mx>0) for(let i=0;i<W;i++) peaks[i]/=mx; }
+  const X=t=>t/buf.duration*W;
+  g.fillStyle=css("--sel"); g.fillRect(X(loopStart),0,X(loopEnd)-X(loopStart),H);
+  g.fillStyle=css("--wave"); for(let x=0;x<W;x++){ const h=Math.max(1,peaks[x]*(H/2-6)); g.fillRect(x,H/2-h,1,h*2); }
+  g.fillStyle=css("--accent"); g.fillRect(X(loopStart)-1,0,2,H); g.fillRect(X(loopEnd)-1,0,2,H);
+  const ph=livePos(); g.fillStyle=css("--brass"); g.fillRect(X(ph)-1,0,2,H);
+}
+function livePos(){ if(mirror.on && mirror.loopT0!=null && ctx && ctx.currentTime>=mirror.loopT0 && ctx.currentTime<=mirror.loopEndT){ const L=loopEnd-loopStart; return loopStart+((ctx.currentTime-mirror.loopT0)%L); }
+  if(playSrc&&ctx){ const t=playFrom+(ctx.currentTime-playT0); if(previewing){ const L=loopEnd-loopStart; return loopStart+((t-loopStart)%L+L)%L; } return Math.min(t,buf?buf.duration:0); } return playhead; }
+let raf=null; function tick(){ drawWave(); if(playSrc||mirror.on){ raf=requestAnimationFrame(tick); } else raf=null; }
+function startTick(){ if(!raf) raf=requestAnimationFrame(tick); }
+function stopPlay(){ if(playSrc){ playhead=livePos(); try{ playSrc.stop(); }catch(e){} playSrc=null; } previewing=false; $("playBtn").textContent="Play"; $("previewBtn").textContent="Loop preview"; drawWave(); }
+async function play(fromLoop){
+  await ensureAudio(false); if(mirror.on) stopMirror(); stopPlay();
+  const s=ctx.createBufferSource(); s.buffer=buf; s.connect(loopBus);
+  if(fromLoop){ s.loop=true; s.loopStart=loopStart; s.loopEnd=loopEnd; playFrom=loopStart; previewing=true; $("previewBtn").textContent="Stop preview"; }
+  else { if(playhead>=buf.duration-0.05) playhead=0; playFrom=playhead; $("playBtn").textContent="Pause"; s.onended=()=>{ if(playSrc===s){ playSrc=null; playhead=0; $("playBtn").textContent="Play"; drawWave(); } }; }
+  playT0=ctx.currentTime+0.02; s.start(playT0,playFrom); playSrc=s; startTick();
+}
+$("playBtn").addEventListener("click",()=>{ if(playSrc&&!previewing) stopPlay(); else play(false); });
+$("previewBtn").addEventListener("click",()=>{ if(previewing) stopPlay(); else play(true); });
+$("setStart").addEventListener("click",()=>{ const t=livePos(); loopStart=clamp(t,0,Math.max(0,loopEnd-0.1)); if(loopEnd-loopStart<0.1) loopEnd=Math.min(buf.duration,loopStart+1); updateEdges(); drawWave(); });
+$("setEnd").addEventListener("click",()=>{ const t=livePos(); if(t<=loopStart+0.1){ loopEnd=Math.min(buf.duration,loopStart+0.1); } else loopEnd=clamp(t,0,buf.duration); updateEdges(); drawWave(); });
+document.querySelectorAll("[data-edge]").forEach(b=>b.addEventListener("click",()=>{ if(!buf) return; const d=+b.dataset.d;
+  if(b.dataset.edge==="start") loopStart=clamp(loopStart+d,0,loopEnd-0.1); else loopEnd=clamp(loopEnd+d,loopStart+0.1,buf.duration); updateEdges(); drawWave(); }));
+// drag to select, tap to move the play point
+(()=>{ const c=$("wave"); let x0=null, moved=false;
+  const tAt=e=>{ const r=c.getBoundingClientRect(); return clamp((e.clientX-r.left)/r.width,0,1)*buf.duration; };
+  c.addEventListener("pointerdown",e=>{ if(!buf) return; x0=tAt(e); moved=false; c.setPointerCapture(e.pointerId); });
+  c.addEventListener("pointermove",e=>{ if(x0==null) return; const t=tAt(e); if(Math.abs(t-x0)>buf.duration*0.01){ moved=true; loopStart=Math.min(x0,t); loopEnd=Math.max(x0,t); updateEdges(); drawWave(); } });
+  c.addEventListener("pointerup",e=>{ if(x0==null) return; if(!moved){ const wasPlaying=playSrc&&!previewing; stopPlay(); playhead=x0; drawWave(); if(wasPlaying) play(false); } x0=null; });
+})();
+window.addEventListener("resize",()=>{ peaks=null; drawWave(); });
+
+// ---------- the mirror ----------
+const mirror={on:false,timer:null,nodes:[],n:0,loopT0:null,loopEndT:0};
+function setPhase(cls,txt){ const p=$("phase"); p.className="phase "+cls; p.textContent=txt; }
+function progress(t0,t1){ cancelAnimationFrame(mirror.pr); const f=()=>{ if(!mirror.on) return; const v=clamp((ctx.currentTime-t0)/(t1-t0),0,1); $("prog").style.width=(v*100).toFixed(1)+"%"; if(v<1) mirror.pr=requestAnimationFrame(f); }; f(); }
+async function startMirror(){
+  if(!buf) return; await ensureAudio(true); stopPlay();
+  if(!(await ensureMic())){ micBlocked("mirMsg"); return; }
+  $("mirMsg").hidden=true; mirror.on=true; mirror.n=0; cap.on=true; keepAwake(true);
+  $("mirBtn").textContent="Stop mirror"; $("mirBtn").classList.add("rec"); startTick(); cycle();
+}
+function cycle(){
+  if(!mirror.on) return;
+  const L=loopEnd-loopStart, passes=+$("passes").value, dur=L*passes, t0=ctx.currentTime+0.15;
+  const s=ctx.createBufferSource(); s.buffer=buf; s.loop=true; s.loopStart=loopStart; s.loopEnd=loopEnd; s.connect(loopBus); s.start(t0,loopStart); s.stop(t0+dur);
+  mirror.nodes=[s]; mirror.loopT0=t0; mirror.loopEndT=t0+dur; mirror.n++;
+  $("takeNo").textContent="Take "+mirror.n;
+  setTimeout(()=>{ if(mirror.on){ setPhase("sing","Sing now"); progress(t0,t0+dur); } },Math.max(0,(t0-ctx.currentTime)*1000));
+  mirror.timer=setTimeout(()=>finish(t0,dur),Math.max(0,(t0+dur+0.25-ctx.currentTime)*1000));
+}
+function finish(t0,dur){
+  if(!mirror.on) return;
+  const lat=+$("latency").value/1000;
+  let f=cap.extract(t0+lat,t0+lat+dur); if($("boost").checked) f=normalize(f);
+  const take=toBuffer(f); addTake(take,mirror.n);
+  // pitch shift for listening: each playback can be raised or lowered by a few cents (the loop underneath is never shifted)
+  const c=+$("cents").value, both=c!==0 && $("shiftMode").value==="both";
+  const rates=[]; for(let i=0;i<+$("takePlays").value;i++){ if(both) rates.push(1); rates.push(rateFor(c)); }
+  const plays=rates.length, gap=+$("gap").value, ts=ctx.currentTime+gap+0.05;
+  let tt=ts; for(const r of rates){ const b=ctx.createBufferSource(); b.buffer=take; b.playbackRate.value=r; b.connect(takeBus); b.start(tt); mirror.nodes.push(b); tt+=dur/r; }
+  const tEnd=tt;
+  const under=+$("under").value/100;   // loop level under the playback: up for pitch in context, 0 to hear your voice alone
+  if(under>0){ const q=ctx.createGain(); q.gain.value=under; q.connect(loopBus); const s=ctx.createBufferSource(); s.buffer=buf; s.loop=true; s.loopStart=loopStart; s.loopEnd=loopEnd; s.connect(q); s.start(ts,loopStart); s.stop(tEnd); mirror.nodes.push(s); }
+  mirror.loopT0=null;
+  if(gap>0) setPhase("wait","Your take next");
+  const lbl = c===0 ? "Your take" : both ? `Your take, then ${c>0?"+":"−"}${Math.abs(c)}¢` : `Your take ${c>0?"+":"−"}${Math.abs(c)}¢`;
+  setTimeout(()=>{ if(mirror.on){ setPhase("take",lbl); progress(ts,tEnd); } },Math.max(0,(ts-ctx.currentTime)*1000));
+  mirror.timer=setTimeout(()=>{ if(mirror.on && gap>0) setPhase("wait","Loop next"); mirror.timer=setTimeout(cycle,gap*1000); },Math.max(0,(tEnd-ctx.currentTime)*1000));
+}
+function stopMirror(){
+  mirror.on=false; clearTimeout(mirror.timer); cancelAnimationFrame(mirror.pr); mirror.loopT0=null;
+  for(const n of mirror.nodes){ try{ n.stop(); }catch(e){} } mirror.nodes=[];
+  if(!loopRec) cap.on=false; keepAwake(false);
+  $("mirBtn").textContent="Start mirror"; $("mirBtn").classList.remove("rec"); setPhase("","Ready"); $("prog").style.width="0%"; drawWave();
+}
+$("mirBtn").addEventListener("click",()=>mirror.on?stopMirror():startMirror());
+
+// recent takes (this session only; save one to keep it)
+const takes=[];
+function addTake(b,n){ takes.unshift({b,n,at:new Date()}); if(takes.length>8) takes.pop(); drawTakes(); }
+function drawTakes(){ const ul=$("takes"); ul.textContent="";
+  for(const t of takes){ const li=document.createElement("li"); const s=document.createElement("span"); s.textContent=`Take ${t.n} · ${t.b.duration.toFixed(1)} s`;
+    const p=document.createElement("button"); p.type="button"; p.className="small"; p.textContent="Play";
+    p.onclick=async()=>{ await ensureAudio(false); const x=ctx.createBufferSource(); x.buffer=t.b; x.playbackRate.value=rateFor(+$("cents").value); x.connect(takeBus); x.start(); };
+    const sv=document.createElement("button"); sv.type="button"; sv.className="small"; sv.textContent=t.saved?"Saved":"Save to library"; sv.disabled=!!t.saved;
+    sv.onclick=async()=>{ const f=t.b.getChannelData(0); const c={id:Date.now()+"-t",name:`Take ${t.n} · ${(cur&&cur.name)||"loop"}`,type:"audio/wav",blob:wavBlob(f,t.b.sampleRate),dur:t.b.duration,created:Date.now(),start:0,end:t.b.duration};
+      await putClip(c); t.saved=true; drawTakes(); refreshLib(); };
+    li.append(s,p,sv); ul.appendChild(li); }
+  if(!takes.length){ const li=document.createElement("li"); li.className="empty"; li.textContent="Takes from this session show up here."; ul.appendChild(li); }
+}
+
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && mirror.on){ keepAwake(true); if(ctx && ctx.state!=="running") ctx.resume(); } });
+refreshLib(); drawWave();
+})();
+</script>
+
+<script>if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
+</body>
+</html>

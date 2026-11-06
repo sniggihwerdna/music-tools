@@ -49,6 +49,12 @@ button:active{transform:translateY(1px)}
 .top{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
 .meter{font-family:var(--display);font-weight:700;font-size:44px;line-height:1;letter-spacing:-.01em}
 .meter small{display:block;font:600 15px var(--mono);color:var(--muted);margin-top:4px;letter-spacing:0}
+/* time signature graphic: the whole cycle as one signature, then the same cycle written as a sum */
+.tsrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.tsig{display:inline-flex;flex-direction:column;align-items:center;gap:2px;font-family:var(--display);font-weight:700;line-height:.9;font-size:48px;letter-spacing:-.02em;padding:2px 4px}
+.tsig.add{font-size:28px;line-height:1;gap:4px}
+.tseq{font:600 24px var(--display);color:var(--muted)}
+.tsnote{font:600 12px var(--mono);color:var(--muted)}
 .phase{font-family:var(--display);font-weight:700;font-size:20px;line-height:1.1;padding:9px 14px;border-radius:10px;background:var(--chip);text-align:center;min-width:8.5em}
 .phase.play{background:var(--accent);color:var(--accent-fg)}
 .phase.silent{background:var(--rest);color:#fff}
@@ -102,7 +108,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <a href="./" style="display:inline-block;margin:0 0 10px;font:600 14px system-ui,-apple-system,sans-serif;color:#23675B;text-decoration:none">&lsaquo; All tools</a>
 
   <header>
-    <h1>Odd Meter Trainer <span class="ver">v11</span></h1>
+    <h1>Odd Meter Trainer <span class="ver">v12</span></h1>
     <p class="sub">Short bars of 3, 4 and 5 combined into a cycle like 3+5+4, or a single odd meter. A count-in, then it loops until you skip or stop. A steady pulse ticks every eighth; pitched notes mark the downbeat (highest), each group start (middle) and the other eighths (low).</p>
   </header>
 
@@ -113,7 +119,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 
   <section class="live">
     <div class="top">
-      <div class="meter" id="meter">7/8<small id="groupsOut">2+2+3</small></div>
+      <div class="meter" id="meter"><div class="tsrow" aria-label="Time signature"><span class="tsig" id="tsTotal"><span id="tsNum">7</span><span>8</span></span><span class="tseq">=</span><span class="tsig add"><span id="tsAdd">2+2+3</span><span>8</span></span></div><small id="groupsOut"></small></div>
       <div class="phase" id="phase">Ready</div>
       <div class="stats">
         <div class="stat"><span class="label" id="unitLab">Bar</span><b id="barOut">–</b></div>
@@ -151,7 +157,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
           <label class="pill"><input type="checkbox" id="c9">9</label>
         </div>
         <div class="f" style="margin-top:6px"><label for="cycleLen">Bars per cycle</label>
-          <select id="cycleLen"><option value="2">2 bars</option><option value="3" selected>3 bars</option><option value="4">4 bars</option><option value="5">5 bars</option><option value="6">6 bars</option><option value="r">Random 3–5</option></select></div>
+          <select id="cycleLen"><option value="2">2 bars</option><option value="3">3 bars</option><option value="4">4 bars</option><option value="5" selected>5 bars</option><option value="6">6 bars</option><option value="r">Random 3–5</option></select></div>
         <div class="pill" style="font-family:var(--body);border:0;padding:0;background:none"><input type="checkbox" id="repeatOk" checked> <label for="repeatOk">Allow repeated lengths (like 7+7+6)</label></div>
       </div>
       <div class="f wide"><label for="sizes">Group sizes</label>
@@ -262,9 +268,10 @@ function newRhythm(){ const d=+$("density").value; rhythm=cyc.bars.map(b=>Array.
 let cells=[]; // flat list across the cycle
 function render(){
   const single=cyc.bars.length===1;
-  $("meter").firstChild.nodeValue = single ? `${cyc.bars[0].n}/8` : `${cyc.bars.map(b=>b.n).join("+")}`;
+  $("tsNum").textContent = total(cyc);
+  $("tsAdd").textContent = single ? cyc.bars[0].groups.join("+") : cyc.bars.map(b=>b.n).join("+");
   const oneGroupBars=cyc.bars.every(b=>b.groups.length===1);
-  $("groupsOut").textContent = single ? cyc.bars[0].groups.join("+") : `${total(cyc)}/8 cycle`+(oneGroupBars?"":" · "+cyc.bars.map(b=>b.groups.join("+")).join(" | "));
+  $("groupsOut").textContent = single ? `${total(cyc)} eighth notes per bar` : `${cyc.bars.length} bars, ${total(cyc)} eighth notes per cycle`+(oneGroupBars?"":" · groups "+cyc.bars.map(b=>b.groups.join("+")).join(" | "));
   $("unitLab").textContent = single ? "Bar" : "Cycle";
   const host=$("bars"); host.textContent=""; cells=[];
   cyc.bars.forEach((bar,bi)=>{
