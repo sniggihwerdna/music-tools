@@ -371,7 +371,7 @@
 
 <div class="container">
   <div class="header">
-    <h1>microtone-infinite <span class="ver">v2</span></h1>
+    <h1>microtone-infinite <span class="ver">v3</span></h1>
     <span class="sub">72-TET ear trainer</span>
   </div>
 
@@ -578,7 +578,7 @@ function ensureAudio() {
 
   hpfFilter = actx.createBiquadFilter();
   hpfFilter.type = "highpass";
-  hpfFilter.frequency.value = 100;
+  hpfFilter.frequency.value = 30; // each note also gets its own high-pass that follows its pitch
   hpfFilter.Q.value = 0.707;
 
   notchFilter = actx.createBiquadFilter();
@@ -601,6 +601,10 @@ function rebuildNotch() {
   notchFilter.Q.value = notchOn ? 0.707 : 0.001;
 }
 
+// tracking high-pass: removes rumble below each note (cutoff follows the note's pitch)
+function trackHP(f,dest,C,fp){ const a=C.createBiquadFilter(), b=C.createBiquadFilter(); a.type=b.type="highpass"; a.Q.value=0.54; b.Q.value=1.31;
+  const c=Math.max(20,f*0.7); a.frequency.value=c; b.frequency.value=c; a.connect(b); b.connect(dest);
+  if(fp){ fp.push({param:a.frequency,mult:0.7},{param:b.frequency,mult:0.7}); } return a; }
 function startDrone() {
   if (!actx) return;
   stopDrone();
@@ -612,7 +616,7 @@ function startDrone() {
   droneGain = actx.createGain();
   droneGain.gain.value = droneVol * 0.35;
   droneOsc.connect(droneGain);
-  droneGain.connect(masterGain);
+  droneGain.connect(trackHP(freq, masterGain, actx));
   droneOsc.start();
 }
 
@@ -728,7 +732,7 @@ function scheduleNote(when) {
   } else {
     const src = actx.createBufferSource();
     src.buffer = buf;
-    src.connect(masterGain);
+    src.connect(trackHP(freq, masterGain, actx));
     src.start(when);
     src.stop(when + dur + 0.01);
     liveSrc.push(src);

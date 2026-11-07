@@ -39,7 +39,8 @@ MTS.piano=function(midi,t,dur,vel,dest){ const ctx=MTS.ctx; if(!ctx||!MTS.buf.pi
   const lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=1800+9000*v;
   const rel=0.25, len=Math.min(dur, best.b.duration/src.playbackRate.value-rel);
   g.gain.setValueAtTime(v*v*0.9+0.1*v,t); g.gain.setValueAtTime(v*v*0.9+0.1*v,t+Math.max(0.02,len)); g.gain.exponentialRampToValueAtTime(0.0005,t+Math.max(0.02,len)+rel);
-  src.connect(lp); lp.connect(g); g.connect(dest||MTS.out); src.start(t); src.stop(t+Math.max(0.02,len)+rel+0.05); return src; };
+  const fHz=440*Math.pow(2,(midi-69)/12), h1=ctx.createBiquadFilter(), h2=ctx.createBiquadFilter(); h1.type=h2.type="highpass"; h1.Q.value=0.54; h2.Q.value=1.31; h1.frequency.value=h2.frequency.value=Math.max(20,fHz*0.7);
+  src.connect(lp); lp.connect(h1); h1.connect(h2); h2.connect(g); g.connect(dest||MTS.out); src.start(t); src.stop(t+Math.max(0.02,len)+rel+0.05); return src; };
 MTS.chord=function(midis,t,dur,vel,dest){ const out=[]; midis.forEach((m,i)=>{ const n=MTS.piano(m,t+i*0.008,dur,vel*(0.9+Math.random()*0.1),dest); if(n) out.push(n); }); return out; };
 MTS.drum=function(name,t,vel,dest){ const ctx=MTS.ctx, b=MTS.buf.drums[name]; if(!ctx||!b) return null;
   const src=ctx.createBufferSource(); src.buffer=b; const g=ctx.createGain(); g.gain.value=(vel==null?0.8:vel);

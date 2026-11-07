@@ -6,6 +6,7 @@ Tap a link to open the tool. These are the links to share.
 - **Audio Mirror:** https://sniggihwerdna.github.io/music-tools/audio-mirror.html
 - **Chord Player:** https://sniggihwerdna.github.io/music-tools/chord-player.html
 - **Microtonal Ear Trainer:** https://sniggihwerdna.github.io/music-tools/microtonal-ear-trainer.html
+- **Odd Grooves:** https://sniggihwerdna.github.io/music-tools/odd-grooves.html
 - **5/4 Groove:** https://sniggihwerdna.github.io/music-tools/five-four-groove.html
 - **Vocal Exercise Patterns:** https://sniggihwerdna.github.io/music-tools/vocal-exercise-patterns.html
 - **Wide Interval Trainer:** https://sniggihwerdna.github.io/music-tools/wide-interval-trainer.html

@@ -98,6 +98,15 @@ body.quick #qPhase{font-size:22px}
 .mval.dead{color:var(--rec);font-weight:600}
 canvas.takeWave{display:block;width:100%;height:90px;margin-top:10px;background:var(--chip);border-radius:10px}
 canvas.mini{width:64px;height:28px;background:var(--chip);border-radius:6px;flex:none}
+details.eq{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+details.eq summary{cursor:pointer;font-weight:600;display:flex;justify-content:space-between;gap:10px;list-style:none;min-height:28px;align-items:center}
+details.eq summary::-webkit-details-marker{display:none}
+details.eq summary::after{content:"▾";color:var(--muted)}
+details.eq[open] summary::after{content:"▴"}
+details.eq > *:not(summary){margin-top:10px}
+.eqSum{font:500 12px var(--mono);color:var(--muted);margin-left:auto}
+canvas.eqCurve{display:block;width:100%;height:110px;background:var(--chip);border-radius:10px}
+details.eq .row{display:flex;gap:8px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -106,7 +115,7 @@ canvas.mini{width:64px;height:28px;background:var(--chip);border-radius:6px;flex
   <a href="./" style="display:inline-block;margin:0 0 10px;font:600 14px system-ui,-apple-system,sans-serif;color:#23675B;text-decoration:none">&lsaquo; All tools</a>
 
   <header>
-    <h1><span id="h1t">Audio Mirror</span> <span class="ver">v6</span></h1>
+    <h1><span id="h1t">Audio Mirror</span> <span class="ver">v7</span></h1>
     <p class="sub" id="sub">Sing, and hear your take played straight back, over and over. Use the quick mirror with no music, or loop a phrase from a file and sing with it.</p>
   </header>
 
@@ -183,6 +192,23 @@ canvas.mini{width:64px;height:28px;background:var(--chip);border-radius:6px;flex
       <div class="f"><label for="latency">Timing fix: <b id="latVal" style="color:var(--fg)">100 ms</b></label><input id="latency" type="range" min="0" max="400" step="10" value="100"></div>
     </div>
     <label class="check"><input id="boost" type="checkbox" checked> Boost quiet takes to a steady level</label>
+    <details class="eq" id="eqBox">
+      <summary><span>Mic EQ</span> <span class="eqSum" id="eqSum">Flat</span></summary>
+      <p class="hint">Fixes the sound of the phone's built-in mic. It's baked into new takes and mic loops, so anything you save keeps the better sound.</p>
+      <div class="grid">
+        <div class="f"><label for="eqPreset">Preset</label>
+          <select id="eqPreset"><option value="flat">Flat (off)</option><option value="phone">Phone mic fix</option><option value="warm">Warmer</option><option value="clear">Clearer</option><option value="boom">Less boom</option><option value="custom" hidden>Custom</option></select></div>
+        <div class="f"><label for="eqHp">Low cut</label>
+          <select id="eqHp"><option value="0">Off</option><option value="60">60 Hz</option><option value="80">80 Hz</option><option value="100">100 Hz</option><option value="150">150 Hz</option></select></div>
+        <div class="f"><label for="eqLow">Bass (below 200 Hz): <b id="eqLowV">0 dB</b></label><input id="eqLow" type="range" min="-12" max="12" step="1" value="0"></div>
+        <div class="f"><label for="eqMid">Middle: <b id="eqMidV">0 dB</b></label><input id="eqMid" type="range" min="-12" max="12" step="1" value="0"></div>
+        <div class="f"><label for="eqMidF">Middle centre: <b id="eqMidFV">2.5 kHz</b></label><input id="eqMidF" type="range" min="0" max="1" step="0.01" value="0.63"></div>
+        <div class="f"><label for="eqHigh">Treble (above 6 kHz): <b id="eqHighV">0 dB</b></label><input id="eqHigh" type="range" min="-12" max="12" step="1" value="0"></div>
+      </div>
+      <canvas id="eqCurve" class="eqCurve" aria-label="EQ curve"></canvas>
+      <div class="row"><button id="eqTry" type="button" class="small" disabled>Hear last take with this EQ</button><button id="eqRaw" type="button" class="small" disabled>Hear it without EQ</button></div>
+      <p class="hint">Headphones make it easier to judge. Takes recorded before a change keep the EQ they were recorded with.</p>
+    </details>
     <div class="takesHead"><h3>Recent takes</h3><button id="clearTakes" class="small" type="button" disabled>Clear takes</button></div>
     <ul class="takes" id="takes"><li class="empty">Takes from this session show up here.</li></ul>
   </section>
@@ -251,6 +277,52 @@ async function ensureMic(){
   const z=ctx.createGain(); z.gain.value=0; src.connect(proc); proc.connect(z); z.connect(ctx.destination);
   startMeter(); return true;
 }
+// ---------- mic EQ (RBJ biquads, run on the recorded audio so it is baked in) ----------
+const EQP={flat:{hp:0,low:0,mid:0,midF:2500,high:0},phone:{hp:80,low:3,mid:-3,midF:2800,high:-2},warm:{hp:60,low:5,mid:-2,midF:2500,high:-4},
+  clear:{hp:100,low:-2,mid:3,midF:3500,high:2},boom:{hp:120,low:-4,mid:0,midF:2500,high:0}};
+const fFromPos=x=>Math.round(200*Math.pow(30,x)/10)*10, posFromF=f=>Math.log(f/200)/Math.log(30);
+function eqGet(){ return {hp:+$("eqHp").value,low:+$("eqLow").value,mid:+$("eqMid").value,midF:fFromPos(+$("eqMidF").value),high:+$("eqHigh").value}; }
+function eqSet(e){ $("eqHp").value=String(e.hp); $("eqLow").value=e.low; $("eqMid").value=e.mid; $("eqMidF").value=posFromF(e.midF).toFixed(2); $("eqHigh").value=e.high; eqUI(); }
+function eqIsFlat(e){ return !e.hp && !e.low && !e.mid && !e.high; }
+function biq(type,f,g,q,sr){ const A=Math.pow(10,g/40), w=2*Math.PI*Math.min(f,sr*0.45)/sr, c=Math.cos(w), sn=Math.sin(w); let b0,b1,b2,a0,a1,a2;
+  if(type==="hp"){ const al=sn/(2*0.707); b0=(1+c)/2; b1=-(1+c); b2=b0; a0=1+al; a1=-2*c; a2=1-al; }
+  else if(type==="peak"){ const al=sn/(2*q); b0=1+al*A; b1=-2*c; b2=1-al*A; a0=1+al/A; a1=-2*c; a2=1-al/A; }
+  else { const al=sn/2*Math.SQRT2, sA=2*Math.sqrt(A)*al;
+    if(type==="low"){ b0=A*((A+1)-(A-1)*c+sA); b1=2*A*((A-1)-(A+1)*c); b2=A*((A+1)-(A-1)*c-sA); a0=(A+1)+(A-1)*c+sA; a1=-2*((A-1)+(A+1)*c); a2=(A+1)+(A-1)*c-sA; }
+    else { b0=A*((A+1)+(A-1)*c+sA); b1=-2*A*((A-1)+(A+1)*c); b2=A*((A+1)+(A-1)*c-sA); a0=(A+1)-(A-1)*c+sA; a1=2*((A-1)-(A+1)*c); a2=(A+1)-(A-1)*c-sA; } }
+  return [b0/a0,b1/a0,b2/a0,a1/a0,a2/a0]; }
+function eqFilters(e,sr){ const fs=[]; if(e.hp) fs.push(biq("hp",e.hp,0,0.707,sr)); if(e.low) fs.push(biq("low",200,e.low,0,sr));
+  if(e.mid) fs.push(biq("peak",e.midF,e.mid,1.1,sr)); if(e.high) fs.push(biq("high",6000,e.high,0,sr)); return fs; }
+function eqApply(x,e){ const fs=eqFilters(e||eqGet(),ctx.sampleRate); if(!fs.length) return x; const y=new Float32Array(x);
+  for(const [b0,b1,b2,a1,a2] of fs){ let x1=0,x2=0,y1=0,y2=0; for(let i=0;i<y.length;i++){ const v=y[i], o=b0*v+b1*x1+b2*x2-a1*y1-a2*y2; x2=x1; x1=v; y2=y1; y1=o; y[i]=o; } }
+  return y; }
+function eqDb(e,f,sr){ let m=1; for(const [b0,b1,b2,a1,a2] of eqFilters(e,sr)){ const w=2*Math.PI*f/sr, c1=Math.cos(w),s1=Math.sin(w),c2=Math.cos(2*w),s2=Math.sin(2*w);
+  const nr=b0+b1*c1+b2*c2, ni=-(b1*s1+b2*s2), dr=1+a1*c1+a2*c2, di=-(a1*s1+a2*s2); m*=Math.sqrt((nr*nr+ni*ni)/(dr*dr+di*di)); } return 20*Math.log10(m); }
+function eqDraw(){ const cv=$("eqCurve"), dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=cv.clientHeight; if(!W) return;
+  cv.width=W*dpr; cv.height=H*dpr; const g=cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W,H);
+  const cs=getComputedStyle(document.documentElement), sr=48000, e=eqGet(), X=f=>W*Math.log(f/30)/Math.log(16000/30), Y=d=>H/2-d*(H/2-8)/15;
+  g.strokeStyle=cs.getPropertyValue("--line"); g.lineWidth=1; g.fillStyle=cs.getPropertyValue("--muted"); g.font="11px "+cs.getPropertyValue("--mono");
+  for(const [f,l] of [[100,"100"],[1000,"1k"],[10000,"10k"]]){ g.beginPath(); g.moveTo(X(f),0); g.lineTo(X(f),H); g.stroke(); g.fillText(l,X(f)+3,H-4); }
+  g.beginPath(); g.moveTo(0,Y(0)); g.lineTo(W,Y(0)); g.stroke();
+  g.strokeStyle=cs.getPropertyValue("--accent"); g.lineWidth=2.5; g.beginPath();
+  for(let x=0;x<=W;x+=2){ const f=30*Math.pow(16000/30,x/W), d=Math.max(-15,Math.min(15,eqDb(e,f,sr))); x?g.lineTo(x,Y(d)):g.moveTo(x,Y(d)); } g.stroke(); }
+function eqUI(){ const e=eqGet(), dB=v=>(v>0?"+":"")+v+" dB";
+  $("eqLowV").textContent=dB(e.low); $("eqMidV").textContent=dB(e.mid); $("eqHighV").textContent=dB(e.high);
+  $("eqMidFV").textContent=e.midF>=1000?(e.midF/1000).toFixed(1)+" kHz":e.midF+" Hz";
+  const name=$("eqPreset").selectedOptions[0].textContent; $("eqSum").textContent=eqIsFlat(e)?"Off":(name.replace(" (off)",""));
+  eqDraw(); try{ localStorage.setItem("am-eq",JSON.stringify({p:$("eqPreset").value,e})); }catch(_){} }
+function eqCustom(){ const o=$("eqPreset").querySelector('[value="custom"]'); o.hidden=false; $("eqPreset").value="custom"; eqUI(); }
+$("eqPreset").addEventListener("change",()=>{ const p=$("eqPreset").value; if(EQP[p]) eqSet(EQP[p]); else eqUI(); });
+for(const id of ["eqHp","eqLow","eqMid","eqMidF","eqHigh"]) $(id).addEventListener("input",eqCustom);
+$("eqBox").addEventListener("toggle",eqDraw); window.addEventListener("resize",eqDraw);
+try{ const sv=JSON.parse(localStorage.getItem("am-eq")||"null"); if(sv&&sv.e){ if(sv.p==="custom") $("eqPreset").querySelector('[value="custom"]').hidden=false; $("eqPreset").value=sv.p; eqSet(sv.e); } else eqUI(); }catch(_){ eqUI(); }
+// A/B on the most recent take (its unprocessed copy is kept for this)
+let lastRaw=null, abSrc=null;
+function abPlay(withEq){ if(!lastRaw||!ctx) return; if(abSrc){ try{ abSrc.stop(); }catch(_){} }
+  let f=withEq?eqApply(lastRaw):lastRaw; if($("boost").checked) f=normalize(f); const b=ctx.createBufferSource(); b.buffer=toBuffer(f); b.connect(takeBus); b.start(); abSrc=b; }
+$("eqTry").addEventListener("click",()=>abPlay(true)); $("eqRaw").addEventListener("click",()=>abPlay(false));
+function capTake(a,b){ const raw=cap.extract(a,b); lastRaw=raw; $("eqTry").disabled=$("eqRaw").disabled=false; let f=eqApply(raw); if($("boost").checked) f=normalize(f); return f; }
+
 // live mic meter
 const lvl={peak:0,hold:0,last:0,heard:0,raf:0,since:0};
 function startMeter(){ if(lvl.raf) return; lvl.since=performance.now(); const f=()=>{ lvl.raf=requestAnimationFrame(f);
@@ -342,7 +414,7 @@ $("recLoopBtn").addEventListener("click",async()=>{
   if(loopRec){ // stop
     const r=loopRec; loopRec=null; $("recLoopBtn").textContent="Record a loop from the mic"; $("recLoopBtn").classList.remove("rec");
     const t1=ctx.currentTime; setTimeout(async()=>{
-      const f=normalize(cap.extract(r.t0,t1)); if(!mirror.on) cap.on=false;
+      const f=normalize(eqApply(cap.extract(r.t0,t1))); if(!mirror.on) cap.on=false;
       const name="Mic loop "+new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
       const blob=wavBlob(f,ctx.sampleRate); const c={id:Date.now()+"-m",name,type:"audio/wav",blob,dur:f.length/ctx.sampleRate,created:Date.now(),start:0,end:f.length/ctx.sampleRate};
       await putClip(c); await refreshLib(); setClip(c,toBuffer(f)); },250);
@@ -417,7 +489,7 @@ function cycle(){
 function finish(t0,dur){
   if(!mirror.on) return;
   const lat=+$("latency").value/1000;
-  let f=cap.extract(t0+lat,t0+lat+dur); if($("boost").checked) f=normalize(f);
+  const f=capTake(t0+lat,t0+lat+dur);
   const take=toBuffer(f); addTake(take,mirror.n);
   // pitch shift for listening: each playback can be raised or lowered by a few cents (the loop underneath is never shifted)
   const c=+$("cents").value, both=c!==0 && $("shiftMode").value==="both";
@@ -477,7 +549,7 @@ function qDone(){
 function qFinish(t0){
   if(!qm.on) return;
   const lat=+$("latency").value/1000, len=qm.len;
-  let f=cap.extract(t0+lat,t0+lat+len); if($("boost").checked) f=normalize(f);
+  const f=capTake(t0+lat,t0+lat+len);
   const take=toBuffer(f); addTake(take,qm.n); qm.last=take; drawTakeWave($("qWave"),take);
   const gap=+$("gap").value, ts=ctx.currentTime+Math.min(gap,0.5)+0.05;
   qm.nodes=[]; const {tEnd,lbl}=playTakeAt(take,len,ts,qm.nodes);
