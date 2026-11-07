@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Music Tools">
+<meta name="theme-color" content="#23675B">
+<title>5/4 Groove</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* One card: the groove display (meter, beat boxes, current chord), then settings */
+:root{
+  --bg:#F2F4F6; --surface:#FFFFFF; --fg:#16202A; --muted:#5B6875; --line:#D6DDE4;
+  --accent:#23675B; --accent-fg:#FFFFFF; --brass:#B9812A; --chip:#E7ECF0;
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"Instrument Sans", "Helvetica Neue", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0F1418; --surface:#172027; --fg:#E5EAEE; --muted:#92A0AC; --line:#2A353F;
+  --accent:#5FB3A3; --accent-fg:#0C1A17; --brass:#E2B157; --chip:#212C35; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0F1418; --surface:#172027; --fg:#E5EAEE; --muted:#92A0AC; --line:#2A353F;
+  --accent:#5FB3A3; --accent-fg:#0C1A17; --brass:#E2B157; --chip:#212C35; color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;margin:0;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,6vw,36px);line-height:1.05;margin:0;letter-spacing:-.01em}
+.ver{font:600 12px var(--mono);color:var(--muted);vertical-align:middle;border:1px solid var(--line);border-radius:6px;padding:2px 6px}
+.sub{color:var(--muted);margin:4px 0 0;max-width:60ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:14px}
+button{font:600 15px/1 var(--body);border-radius:999px;padding:11px 18px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;min-height:44px}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-size:18px;padding:14px 28px;min-width:8em}
+button:disabled{opacity:.45}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+select{font:500 16px var(--body);padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);width:100%;min-height:42px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.stage{display:grid;grid-template-columns:auto 1fr;gap:16px 20px;align-items:center}
+.ts{display:flex;flex-direction:column;align-items:center;font-family:var(--display);font-weight:700;line-height:.9}
+.ts b{font-size:44px}
+.ts i{font-style:normal;font:600 13px var(--mono);color:var(--muted);margin-top:6px}
+.beats{display:flex;gap:6px}
+.grp{display:flex;gap:6px;padding:5px;border-radius:12px;background:var(--chip)}
+.beat{width:clamp(34px,10vw,52px);height:clamp(34px,10vw,52px);border-radius:9px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;font:600 16px var(--mono);color:var(--muted);transition:background .05s}
+.beat.gs{color:var(--fg);font-weight:700}
+.beat.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.beat.on.one{background:var(--brass);border-color:var(--brass);color:#1A1206}
+.info{grid-column:1/-1;font-family:var(--display);font-weight:700;font-size:22px;min-height:1.2em}
+.info.mute{color:var(--brass)}
+.now{font-family:var(--display);font-weight:700;font-size:clamp(34px,10vw,56px);line-height:1}
+.next{font:500 15px var(--body);color:var(--muted)}
+.next b{color:var(--fg)}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.status{font:500 13px var(--mono);color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:12px}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f label{font-size:12.5px;color:var(--muted);font-weight:500}
+.f label b{color:var(--fg)}
+h2{font-family:var(--display);font-weight:700;font-size:16px;margin:0}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <a href="./" style="display:inline-block;margin:0 0 10px;font:600 14px system-ui,-apple-system,sans-serif;color:#23675B;text-decoration:none">&lsaquo; All tools</a>
+
+  <header>
+    <h1>5/4 Groove <span class="ver">v2</span></h1>
+    <p class="sub">A looping 5/4 drum groove with real drum sounds. Choose the grouping and the feel; turn on silent bars to check that you keep the time yourself.</p>
+  </header>
+
+  <section class="card">
+    <div class="stage">
+      <div class="ts" aria-label="Time signature"><b>5</b><b>4</b><i id="tsGroup">3+2</i></div>
+      <div class="beats" id="beats" aria-label="Beats"></div>
+      <div class="info" id="info" aria-live="polite"></div>
+    </div>
+    <div class="controls">
+      <button id="play" class="primary" type="button">Play</button>
+      <span class="status" id="status">Bar –</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="grid">
+      <div class="f"><label for="tempo">Tempo: <b id="tempoVal">160</b> bpm</label><input id="tempo" type="range" min="60" max="240" step="2" value="160"></div>
+      <div class="f"><label for="group">Grouping</label>
+        <select id="group"><option value="3,2" selected>3 + 2</option><option value="2,3">2 + 3</option><option value="2,2,1">2 + 2 + 1</option><option value="5">5 (no grouping)</option></select></div>
+      <div class="f"><label for="pattern">Pattern</label>
+        <select id="pattern"><option value="jazz" selected>Jazz (Take Five feel)</option><option value="rock">Straight rock</option><option value="groups">Group starts only</option><option value="pulse">Just the pulse</option></select></div>
+      <div class="f"><label for="swing">Eighth notes</label>
+        <select id="swing"><option value="0.5">Straight</option><option value="0.6">Light swing</option><option value="0.66" selected>Swung</option></select></div>
+      <div class="f"><label for="countIn">Count-in</label>
+        <select id="countIn"><option value="0">None</option><option value="1" selected>1 bar</option></select></div>
+      <div class="f"><label for="silent">Silent bars</label>
+        <select id="silent"><option value="0" selected>Off</option><option value="4,1">Play 4, silent 1</option><option value="4,2">Play 4, silent 2</option><option value="2,2">Play 2, silent 2</option><option value="4,4">Play 4, silent 4</option></select></div>
+    </div>
+    <div class="grid">
+      <div class="f"><label for="vKick">Kick</label><input id="vKick" type="range" min="0" max="1" step="0.05" value="0.85"></div>
+      <div class="f"><label for="vSnare">Snare</label><input id="vSnare" type="range" min="0" max="1" step="0.05" value="0.7"></div>
+      <div class="f"><label for="vHat">Hi-hat</label><input id="vHat" type="range" min="0" max="1" step="0.05" value="0.8"></div>
+    </div>
+    <p class="hint">Changes take effect at the next bar. In silent bars the beat boxes keep moving, so you can see where the time should be when the drums come back in.</p>
+  </section>
+</div>
+<script src="sounds.js"></script>
+<script>
+(() => {
+const $=id=>document.getElementById(id);
+const LOOKAHEAD=()=>document.hidden?8:0.25;
+const PARTS=["Kick","Snare","Hat"];
+let ctx=null, buses=null, playing=false, timer=null, nextBar=0, bar=0, vis=[], raf=0;
+
+const groups=()=>$("group").value.split(",").map(Number);
+const starts=()=>{ const g=groups(), s=[]; let n=0; for(const x of g){ s.push(n); n+=x; } return s; };
+function drawBeats(){ const box=$("beats"); box.textContent=""; let n=1;
+  for(const g of groups()){ const d=document.createElement("div"); d.className="grp";
+    for(let i=0;i<g;i++){ const b=document.createElement("div"); b.className="beat"+(i===0?" gs":""); b.id="b"+n; b.textContent=n; d.appendChild(b); n++; }
+    box.appendChild(d); }
+  $("tsGroup").textContent=groups().length>1?groups().join("+"):""; }
+drawBeats();
+
+async function start(){
+  await MTS.start(); ctx=MTS.ctx;
+  if(!buses){ buses={}; for(const k of PARTS){ const g=ctx.createGain(); g.gain.value=+$("v"+k).value; g.connect(MTS.out); buses[k]=g; } }
+  playing=true; bar=-(+$("countIn").value); nextBar=ctx.currentTime+0.15; vis=[];
+  $("play").textContent="Stop"; MTS.wantAwake=true; MTS.keepAwake(true);
+  tick(); timer=setInterval(tick,25); loop();
+}
+function stop(){ playing=false; clearInterval(timer); cancelAnimationFrame(raf); MTS.wantAwake=false; MTS.keepAwake(false);
+  if(buses){ for(const k of PARTS){ buses[k].disconnect(); const g=ctx.createGain(); g.gain.value=+$("v"+k).value; g.connect(MTS.out); buses[k]=g; } }
+  $("play").textContent="Play"; document.querySelectorAll(".beat").forEach(b=>b.classList.remove("on","one")); $("status").textContent="Bar –"; $("info").textContent=""; $("info").className="info"; }
+
+function tick(){ while(playing && nextBar < ctx.currentTime+LOOKAHEAD()){ schedBar(nextBar,bar); nextBar+=5*60/+$("tempo").value; bar++; } }
+function isSilent(b){ const v=$("silent").value; if(v==="0"||b<0) return false; const [on,off]=v.split(",").map(Number); return (b%(on+off))>=on; }
+
+function schedBar(t0,b){
+  const beat=60/+$("tempo").value, sw=+$("swing").value, st=starts(), pat=$("pattern").value;
+  const at=(bt,and)=>t0+bt*beat+(and?sw*beat:0);
+  const hit=(d,bt,and,v)=>MTS.drum(d==="Hat"?"hihat":d.toLowerCase(),at(bt,and),v,buses[d]);
+  const kind=b<0?"count":isSilent(b)?"silent":"play";
+  if(kind==="count"){ for(let i=0;i<5;i++) hit("Hat",i,false,i===0?0.9:0.55); }
+  else if(kind==="play"){
+    if(pat==="pulse"){ for(let i=0;i<5;i++) hit("Hat",i,false,i===0?0.9:0.5); hit("Kick",0,false,0.8); }
+    else if(pat==="groups"){ for(let i=0;i<5;i++){ if(st.includes(i)) hit("Kick",i,false,i===0?0.95:0.75); else hit("Hat",i,false,0.5); } }
+    else if(pat==="rock"){ for(let i=0;i<5;i++){ hit("Hat",i,false,st.includes(i)?0.7:0.5); hit("Hat",i,true,0.35); }
+      for(const s of st) hit("Kick",s,false,s===0?0.95:0.8);
+      const g=groups(); let n=0; for(const x of g){ if(x>1) hit("Snare",n+x-1,false,0.75); n+=x; } }
+    else { // jazz: ride-style hats with a skip into each group, light kick on group starts, snare comping
+      for(let i=0;i<5;i++) hit("Hat",i,false,i===0?0.75:st.includes(i)?0.6:0.45);
+      for(let k=0;k<st.length;k++){ const last=(k+1<st.length?st[k+1]:5)-1; hit("Hat",last,true,0.35); }
+      for(const s of st) hit("Kick",s,false,s===0?0.85:0.6);
+      if(st.length>1) hit("Snare",st[1]-1,true,0.3); hit("Snare",4,false,0.35); }
+  }
+  for(let i=0;i<5;i++) vis.push({t:at(i,false),beat:i,bar:b,kind});
+}
+function loop(){ raf=requestAnimationFrame(loop); if(!ctx) return; const now=ctx.currentTime;
+  let cur=null; while(vis.length && vis[0].t<=now) cur=vis.shift();
+  if(!cur) return;
+  document.querySelectorAll(".beat").forEach(x=>x.classList.remove("on","one")); const el=$("b"+(cur.beat+1)); if(el){ el.classList.add("on"); if(cur.beat===0) el.classList.add("one"); }
+  if(cur.beat===0){ $("status").textContent=cur.bar<0?"Count-in":"Bar "+(cur.bar+1);
+    $("info").textContent=cur.kind==="silent"?"Silent: keep counting":cur.kind==="count"?"Count-in":""; $("info").className="info"+(cur.kind==="silent"?" mute":""); } }
+
+$("play").addEventListener("click",()=>{ playing?stop():start(); });
+$("tempo").addEventListener("input",e=>$("tempoVal").textContent=e.target.value);
+$("group").addEventListener("change",drawBeats);
+for(const k of PARTS) $("v"+k).addEventListener("input",e=>{ if(buses) buses[k].gain.setTargetAtTime(+e.target.value,ctx.currentTime,0.03); });
+document.addEventListener("visibilitychange",()=>{ if(playing) tick(); });
+})();
+</script>
+
+<script>if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
+</body>
+</html>

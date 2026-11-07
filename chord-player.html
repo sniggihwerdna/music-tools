@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Music Tools">
+<meta name="theme-color" content="#23675B">
+<title>Chord Player</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #ffffff;
+    --bg2:     #f4f4f2;
+    --bg3:     #eceae6;
+    --text:    #1a1a18;
+    --text2:   #6b6b67;
+    --text3:   #a0a09a;
+    --border:  rgba(0,0,0,0.11);
+    --border2: rgba(0,0,0,0.20);
+    --green:   #639922;
+    --greenbg: #EAF3DE;
+    --radius:  8px;
+    --radius-lg: 14px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:      #1c1c1a;
+      --bg2:     #272725;
+      --bg3:     #313130;
+      --text:    #e8e8e4;
+      --text2:   #9a9a95;
+      --text3:   #636360;
+      --border:  rgba(255,255,255,0.09);
+      --border2: rgba(255,255,255,0.17);
+      --greenbg: #1e2e10;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    background: var(--bg3);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem 3rem;
+  }
+
+  .wrap { width: 100%; max-width: 520px; display: flex; flex-direction: column; }
+  .ver { font-size: 11px; font-weight: 500; color: var(--text3); border: 0.5px solid var(--border2); border-radius: 5px; padding: 1px 6px; vertical-align: middle; margin-left: 6px; }
+  .chk { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text); margin-top: 10px; }
+  .chk input { width: 18px; height: 18px; accent-color: var(--green); }
+  .card {
+    background: var(--bg);
+    border-radius: var(--radius-lg);
+    border: 0.5px solid var(--border);
+    padding: 1.5rem 1.5rem 2rem;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  h1 {
+    font-size: 19px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 1.4rem;
+    letter-spacing: -0.01em;
+  }
+
+  .section { margin-bottom: 1.2rem; }
+
+  .lbl {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text3);
+    margin-bottom: 7px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  hr {
+    border: none;
+    border-top: 0.5px solid var(--border);
+    margin: 1.3rem 0;
+  }
+
+  .pill-group { display: flex; flex-wrap: wrap; gap: 5px; }
+  .pill {
+    font-size: 12px;
+    padding: 4px 11px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border2);
+    background: var(--bg);
+    color: var(--text2);
+    cursor: pointer;
+    transition: background 0.1s, color 0.1s;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  .pill:hover { background: var(--bg2); }
+  .pill.on { background: var(--bg2); color: var(--text); font-weight: 500; }
+
+  .slider-wrap { display: flex; align-items: center; gap: 10px; }
+  .slider-wrap input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--bg3);
+    outline: none;
+    cursor: pointer;
+  }
+  .slider-wrap input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 15px; height: 15px;
+    border-radius: 50%;
+    background: var(--text);
+    cursor: pointer;
+  }
+  .sval {
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 48px;
+    color: var(--text);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 22px; }
+
+  .btn-row { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    padding: 7px 22px;
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border2);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+    transition: background 0.1s;
+  }
+  .btn:hover { background: var(--bg2); }
+  .btn.primary { background: var(--bg2); font-weight: 500; }
+  .btn.playing { background: var(--greenbg); border-color: var(--green); color: var(--green); font-weight: 500; }
+
+  .dots { display: flex; gap: 5px; align-items: center; margin-left: 4px; }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--border2);
+    transition: background 0.04s, transform 0.04s;
+  }
+  .dot.on { background: var(--green); transform: scale(1.3); }
+
+  .chord-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+  .chord-card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 9px 10px;
+    cursor: pointer;
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+    gap: 3px;
+    transition: border-color 0.1s, background 0.1s;
+  }
+  .chord-card:hover { border-color: var(--border2); }
+  .chord-card.playing { background: var(--greenbg); border: 1.5px solid var(--green); }
+  .chord-card.skipped { background: var(--bg2); }
+  .chord-card.skipped .cname { opacity: 0.3; text-decoration: line-through; }
+  .chord-card.skipped .cnum  { opacity: 0.3; }
+  .chord-card.dim { opacity: 0.25; pointer-events: none; }
+
+  .cname { display: flex; align-items: baseline; gap: 1px; flex: 1; min-width: 0; }
+  .croot   { font-size: 21px; font-weight: 500; color: var(--text);  line-height: 1; flex-shrink: 0; }
+  .csuffix { font-size: 15px; font-weight: 400; color: var(--text2); line-height: 1; flex-shrink: 0; }
+  .cnum    { font-size: 12px; color: var(--text3); flex-shrink: 0; }
+
+  .eq-box {
+    height: 50px;
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    background: var(--bg2);
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .eq-box canvas { display: block; width: 100%; height: 100%; }
+  /* phone fit */
+  .wrap > .card { min-width: 0; }
+  .two-col { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+  .chord-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  .slider-wrap input[type=range] { min-width: 0; }
+  .sval { min-width: 0; font-size: 12px; }
+  @media (max-width: 440px) {
+    .card { padding: 1.1rem 1rem 1.5rem; }
+    .chord-card { padding: 7px 6px; }
+    .croot { font-size: 18px; } .csuffix { font-size: 12px; } .cnum { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <a href="./" style="display:inline-block;margin:0 0 10px;font:600 14px system-ui,-apple-system,sans-serif;color:#23675B;text-decoration:none">&lsaquo; All tools</a>
+
+<div class="card">
+  <h1>Chord Player <span class="ver">v2</span></h1>
+
+  <div class="section">
+    <div class="lbl">Chord types</div>
+    <div class="pill-group" id="typeButtons"></div>
+  </div>
+
+  <hr />
+
+  <div class="section">
+    <div class="lbl" id="lblCount">Chords in set: 4</div>
+    <div class="slider-wrap">
+      <input type="range" min="1" max="8" value="4" step="1" id="sCount" />
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="lbl" id="lblTempo">Tempo: 60 BPM</div>
+    <div class="slider-wrap">
+      <input type="range" min="30" max="160" value="60" step="1" id="sTempo" />
+    </div>
+  </div>
+
+  <hr />
+
+  <div class="section">
+    <div class="lbl">Sound</div>
+    <div class="pill-group" id="soundButtons"><button class="pill on" data-s="organ" type="button">Organ</button><button class="pill" data-s="piano" type="button">Piano</button></div>
+  </div>
+
+  <div class="section">
+    <div class="lbl">Volume</div>
+    <div class="two-col">
+      <div>
+        <div class="lbl" id="lblOrgan">Chords: 80%</div>
+        <div class="slider-wrap">
+          <input type="range" min="0" max="100" value="80" step="1" id="sOrgan" />
+          <span class="sval" id="vOrgan">80%</span>
+        </div>
+      </div>
+      <div>
+        <div class="lbl" id="lblClick">Click: 60%</div>
+        <div class="slider-wrap">
+          <input type="range" min="0" max="100" value="60" step="1" id="sClick" />
+          <span class="sval" id="vClick">60%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="lbl">Organ EQ notch</div>
+    <div class="two-col">
+      <div>
+        <div class="lbl" id="lblFreq">Frequency: 800 Hz</div>
+        <div class="slider-wrap">
+          <input type="range" min="0" max="100" value="45" step="1" id="sFreq" />
+          <span class="sval" id="vFreq">800 Hz</span>
+        </div>
+      </div>
+      <div>
+        <div class="lbl" id="lblGain">Notch: 0 dB</div>
+        <div class="slider-wrap">
+          <input type="range" min="-18" max="0" value="0" step="1" id="sGain" />
+          <span class="sval" id="vGain">0 dB</span>
+        </div>
+      </div>
+    </div>
+    <div class="eq-box"><canvas id="eqCanvas"></canvas></div>
+  </div>
+
+  <hr />
+
+  <div class="section">
+    <div class="btn-row">
+      <button class="btn primary" id="btnPlay">Play</button>
+      <button class="btn" id="btnRand">Randomize</button>
+      <div class="dots" id="dots"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="lbl" style="margin-bottom:8px;">Chord sequence — click to skip / unskip</div>
+    <div class="chord-grid" id="chordGrid"></div>
+    <label class="chk"><input type="checkbox" id="endless"> Endless: new chords after each time through</label>
+  </div>
+</div>
+</div>
+<script src="sounds.js"></script>
+
+<script>
+const ROOTS = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const TYPES = [
+  { id:'maj7', label:'Major 7',    sfx:'maj7', iv:[0,4,7,11] },
+  { id:'maj6', label:'Major 6',    sfx:'6',    iv:[0,4,7,9]  },
+  { id:'min7', label:'Minor 7',    sfx:'m7',   iv:[0,3,7,10] },
+  { id:'dom7', label:'Dom 7',      sfx:'7',    iv:[0,4,7,10] },
+  { id:'dim7', label:'Dim 7',      sfx:'°7',   iv:[0,3,6,9]  },
+  { id:'aug7', label:'Aug 7',      sfx:'+7',   iv:[0,4,8,10] },
+  { id:'hdim', label:'Half Dim 7', sfx:'ø7',   iv:[0,3,6,10] },
+];
+
+let activeTypes = new Set(['maj7','min7','dom7']);
+let chordCount  = 4;
+let tempo       = 60;
+let organVol    = 0.80;
+let clickVol    = 0.60;
+let eqPos       = 0.45;
+let eqGain      = 0;
+let chords      = [];
+let skipped     = new Array(8).fill(false);
+let playing     = false;
+let currentSlot = -1;
+let seqIdx      = 0;
+let barTimer    = null;
+let ac          = null;
+let liveGain    = null;
+let liveNotch   = null;
+
+const C4 = 60, MAX_DIST = 21, MAX_IV = 7;
+
+let bus = null, sound = 'organ', nextBarTime = 0, schedTimer = null, visQ = [], rafId = 0;
+const LOOKAHEAD = () => document.hidden ? 8 : 0.2;
+function ctx() {
+  if (!ac) ac = (window.MTS && MTS.ctx) || new (window.AudioContext || window.webkitAudioContext)();
+  if (!bus) { bus = ac.createGain(); bus.connect(ac.destination); }
+  return ac;
+}
+function midiFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+function eqHz(pos) { return Math.round(80 * Math.pow(150, pos)); }
+
+// Standard metronome click: tuned sine burst, like a physical metronome
+// accent (beat 1) is higher pitched; other beats are lower
+function playClick(t, accent) {
+  if (clickVol === 0) return;
+  const a   = ctx();
+  const f   = accent ? 1800 : 1200;
+  const dur = 0.04;
+
+  const osc = a.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.value = f;
+
+  const env = a.createGain();
+  env.gain.setValueAtTime(0, t);
+  env.gain.linearRampToValueAtTime(0.6 * clickVol, t + 0.002);
+  env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+  const bp = a.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = f;
+  bp.Q.value = 4;
+
+  osc.connect(bp); bp.connect(env); env.connect(bus);
+  osc.start(t); osc.stop(t + dur + 0.01);
+}
+
+function playChord(ch, t, duration) {
+  if (sound === 'piano' && window.MTS && MTS.ready) {
+    const g = ctx().createGain(); g.gain.value = organVol * 1.3;
+    const n = ctx().createBiquadFilter(); n.type = 'peaking'; n.frequency.value = eqHz(eqPos); n.Q.value = 1.4; n.gain.value = eqGain;
+    g.connect(n); n.connect(bus); liveGain = null; liveNotch = n;
+    const midis = ch.type.iv.map(i => ch.midi + i);
+    MTS.chord(midis, t, duration, 0.6, g);
+    MTS.piano(ch.midi - 12, t, duration, 0.55, g);
+    return;
+  }
+  playOrgan(chordFreqs(ch), duration, t);
+}
+function playOrgan(freqs, duration, t) {
+  if (organVol === 0) { liveGain = null; liveNotch = null; return; }
+  const a = ctx();
+
+  const master = a.createGain();
+  master.gain.setValueAtTime(0, t);
+  master.gain.linearRampToValueAtTime(0.22 * organVol, t + 0.08);
+  master.gain.setValueAtTime(0.22 * organVol, t + duration - 0.12);
+  master.gain.linearRampToValueAtTime(0, t + duration);
+
+  const notch = a.createBiquadFilter();
+  notch.type = 'peaking';
+  notch.frequency.value = eqHz(eqPos);
+  notch.Q.value = 1.4;
+  notch.gain.value = eqGain;
+
+  master.connect(notch);
+  notch.connect(bus);
+
+  freqs.forEach(f => {
+    [1,2,3,4].forEach((h, i) => {
+      const osc = a.createOscillator();
+      const g   = a.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = f * h;
+      g.gain.value = [0.6, 0.3, 0.12, 0.06][i];
+      osc.connect(g); g.connect(master);
+      osc.start(t); osc.stop(t + duration + 0.05);
+    });
+  });
+
+  liveGain  = master;
+  liveNotch = notch;
+}
+
+function pickType() {
+  const pool = TYPES.filter(t => activeTypes.has(t.id));
+  return pool.length ? pool[Math.floor(Math.random() * pool.length)] : TYPES[0];
+}
+function randomChord() {
+  const r = Math.floor(Math.random() * 12);
+  return { root: ROOTS[r], type: pickType(), midi: 48 + r };
+}
+function constrainedChord(prev) {
+  const type = pickType();
+  const cands = [];
+  for (let r = 0; r < 12; r++) {
+    const m  = 48 + r;
+    const iv = Math.min(Math.abs(m - prev), 12 - Math.abs(m - prev));
+    if (iv <= MAX_IV && Math.abs(m - C4) <= MAX_DIST)
+      cands.push({ root: ROOTS[r], type, midi: m });
+  }
+  if (!cands.length) return randomChord();
+  return cands[Math.floor(Math.random() * cands.length)];
+}
+function chordFreqs(ch) { return ch.type.iv.map(i => midiFreq(ch.midi + i)); }
+
+function buildChords(from) {
+  chords = []; let prev = from || C4;
+  for (let i = 0; i < 8; i++) {
+    const c = (i === 0 && !from) ? randomChord() : constrainedChord(prev);
+    chords.push(c); prev = c.midi;
+  }
+  skipped = new Array(8).fill(false);
+  renderGrid();
+}
+
+function activeSlots() {
+  return Array.from({ length: chordCount }, (_, i) => i).filter(i => !skipped[i]);
+}
+
+function schedBar(t0) {
+  const spb = 60 / tempo, barDur = spb * 4;
+  for (let b = 0; b < 4; b++) playClick(t0 + b * spb, b === 0);
+  let slots = activeSlots();
+  if (slots.length && seqIdx > 0 && seqIdx % slots.length === 0 && document.getElementById('endless').checked) {
+    const last = chords[slots[slots.length - 1]];
+    buildChords(last.midi); slots = activeSlots();
+  }
+  let slot = -1;
+  if (slots.length) { slot = slots[seqIdx % slots.length]; seqIdx++; playChord(chords[slot], t0, barDur * 0.97); }
+  const snap = chords.slice();
+  for (let b = 0; b < 4; b++) visQ.push({ t: t0 + b * spb, beat: b, slot: b === 0 ? slot : null, chords: b === 0 ? snap : null });
+  return barDur;
+}
+function tick() {
+  const a = ctx();
+  while (playing && nextBarTime < a.currentTime + LOOKAHEAD()) nextBarTime += schedBar(nextBarTime);
+}
+function drawLoop() {
+  rafId = requestAnimationFrame(drawLoop);
+  const now = ctx().currentTime; let cur = null;
+  while (visQ.length && visQ[0].t <= now) cur = visQ.shift();
+  if (!cur) return;
+  updateDots(cur.beat);
+  if (cur.beat === 0) { if (cur.chords) shown = cur.chords; currentSlot = cur.slot; renderGrid(); }
+}
+let shown = null;
+
+async function startPlayback() {
+  if (playing) return;
+  if (window.MTS) { try { await MTS.start(); } catch (e) {} }
+  ctx(); if (ac.state !== 'running') await ac.resume();
+  playing = true; seqIdx = 0; visQ = [];
+  nextBarTime = ac.currentTime + 0.1;
+  document.getElementById('btnPlay').textContent = 'Stop';
+  document.getElementById('btnPlay').classList.add('playing');
+  if (window.MTS) { MTS.wantAwake = true; MTS.keepAwake(true); }
+  tick(); schedTimer = setInterval(tick, 25); drawLoop();
+}
+
+function stopPlayback() {
+  playing = false; currentSlot = -1;
+  clearInterval(schedTimer); cancelAnimationFrame(rafId); visQ = [];
+  if (bus) { bus.disconnect(); bus = ac.createGain(); bus.connect(ac.destination); }
+  if (window.MTS) { MTS.wantAwake = false; MTS.keepAwake(false); }
+  liveGain = null; liveNotch = null;
+  document.getElementById('btnPlay').textContent = 'Play';
+  document.getElementById('btnPlay').classList.remove('playing');
+  updateDots(-1);
+  shown = null; renderGrid();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('chordGrid');
+  grid.innerHTML = '';
+  (shown || chords).forEach((ch, i) => {
+    const inSet = i < chordCount;
+    const div   = document.createElement('div');
+    let cls = 'chord-card';
+    if (!inSet)                cls += ' dim';
+    else if (i === currentSlot) cls += ' playing';
+    else if (skipped[i])       cls += ' skipped';
+    div.className = cls;
+    div.innerHTML =
+      `<div class="cname"><span class="croot">${ch.root}</span><span class="csuffix">${ch.type.sfx}</span></div>` +
+      `<div class="cnum">${i + 1}</div>`;
+    if (inSet) div.addEventListener('click', () => { skipped[i] = !skipped[i]; renderGrid(); });
+    grid.appendChild(div);
+  });
+}
+
+function buildTypeButtons() {
+  const c = document.getElementById('typeButtons'); c.innerHTML = '';
+  TYPES.forEach(t => {
+    const b = document.createElement('button');
+    b.className = 'pill' + (activeTypes.has(t.id) ? ' on' : '');
+    b.textContent = t.label;
+    b.addEventListener('click', () => {
+      if (activeTypes.has(t.id)) { if (activeTypes.size > 1) activeTypes.delete(t.id); }
+      else activeTypes.add(t.id);
+      b.classList.toggle('on', activeTypes.has(t.id));
+    });
+    c.appendChild(b);
+  });
+}
+
+function buildDots() {
+  const c = document.getElementById('dots'); c.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot'; d.id = 'dot' + i; c.appendChild(d);
+  }
+}
+function updateDots(beat) {
+  for (let i = 0; i < 4; i++)
+    document.getElementById('dot' + i)?.classList.toggle('on', i === beat);
+}
+
+function drawEQ() {
+  const canvas = document.getElementById('eqCanvas');
+  const box    = canvas.parentElement;
+  const dpr    = window.devicePixelRatio || 1;
+  canvas.width  = box.clientWidth  * dpr;
+  canvas.height = box.clientHeight * dpr;
+  const cx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  cx.clearRect(0, 0, W, H);
+  const dark = window.matchMedia('(prefers-color-scheme:dark)').matches;
+  cx.strokeStyle = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  cx.lineWidth = 1;
+  cx.beginPath(); cx.moveTo(0, H/2); cx.lineTo(W, H/2); cx.stroke();
+  cx.strokeStyle = dark ? 'rgba(140,195,100,0.9)' : 'rgba(50,130,40,0.9)';
+  cx.lineWidth = 1.6 * dpr;
+  cx.beginPath();
+  for (let px = 0; px < W; px++) {
+    const f     = 80 * Math.pow(150, px / W);
+    const ratio = f / eqHz(eqPos);
+    const gl    = Math.pow(10, eqGain / 20);
+    const resp  = 1 + (gl - 1) / (1 + 1.96 * (ratio - 1/ratio) * (ratio - 1/ratio));
+    const db    = Math.max(-18, Math.min(6, 20 * Math.log10(Math.max(resp, 0.001))));
+    const y     = H/2 - (db / 18) * (H/2 - 4);
+    px === 0 ? cx.moveTo(px, y) : cx.lineTo(px, y);
+  }
+  cx.stroke();
+  const nx = Math.log(eqHz(eqPos) / 80) / Math.log(150) * W;
+  const ny = H/2 - (eqGain / 18) * (H/2 - 4);
+  cx.fillStyle = dark ? 'rgba(140,195,100,0.9)' : 'rgba(50,130,40,0.9)';
+  cx.beginPath(); cx.arc(nx, ny, 3 * dpr, 0, Math.PI * 2); cx.fill();
+}
+
+document.getElementById('btnPlay').addEventListener('click', () => {
+  if (playing) stopPlayback(); else startPlayback();
+});
+document.getElementById('btnRand').addEventListener('click', () => { buildChords(); shown = null; renderGrid(); });
+document.querySelectorAll('#soundButtons .pill').forEach(b => b.addEventListener('click', () => {
+  sound = b.dataset.s;
+  document.querySelectorAll('#soundButtons .pill').forEach(x => x.classList.toggle('on', x === b));
+  if (sound === 'piano' && window.MTS) MTS.start().catch(() => {});
+}));
+document.addEventListener('visibilitychange', () => { if (playing) tick(); });
+document.getElementById('sCount').addEventListener('input', e => {
+  chordCount = +e.target.value;
+  document.getElementById('lblCount').textContent = `Chords in set: ${chordCount}`;
+  skipped = new Array(8).fill(false); renderGrid();
+});
+document.getElementById('sTempo').addEventListener('input', e => {
+  tempo = +e.target.value;
+  document.getElementById('lblTempo').textContent = `Tempo: ${tempo} BPM`;
+});
+document.getElementById('sOrgan').addEventListener('input', e => {
+  organVol = +e.target.value / 100;
+  document.getElementById('lblOrgan').textContent = `Chords: ${e.target.value}%`;
+  document.getElementById('vOrgan').textContent   = `${e.target.value}%`;
+  if (liveGain) {
+    const a = ctx();
+    liveGain.gain.cancelScheduledValues(a.currentTime);
+    liveGain.gain.setTargetAtTime(0.22 * organVol, a.currentTime, 0.04);
+  }
+});
+document.getElementById('sClick').addEventListener('input', e => {
+  clickVol = +e.target.value / 100;
+  document.getElementById('lblClick').textContent = `Click: ${e.target.value}%`;
+  document.getElementById('vClick').textContent   = `${e.target.value}%`;
+});
+document.getElementById('sFreq').addEventListener('input', e => {
+  eqPos = +e.target.value / 100;
+  const h   = eqHz(eqPos);
+  const lbl = h >= 1000 ? (h / 1000).toFixed(1) + 'k Hz' : h + ' Hz';
+  document.getElementById('lblFreq').textContent = `Frequency: ${lbl}`;
+  document.getElementById('vFreq').textContent   = lbl;
+  if (liveNotch) liveNotch.frequency.setTargetAtTime(h, ctx().currentTime, 0.02);
+  drawEQ();
+});
+document.getElementById('sGain').addEventListener('input', e => {
+  eqGain = +e.target.value;
+  document.getElementById('lblGain').textContent = `Notch: ${eqGain} dB`;
+  document.getElementById('vGain').textContent   = `${eqGain} dB`;
+  if (liveNotch) liveNotch.gain.setTargetAtTime(eqGain, ctx().currentTime, 0.02);
+  drawEQ();
+});
+
+buildTypeButtons();
+buildDots();
+buildChords();
+window.addEventListener('load',   () => setTimeout(drawEQ, 80));
+window.addEventListener('resize', drawEQ);
+</script>
+
+<script>if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
+</body>
+</html>

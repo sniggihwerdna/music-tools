@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Music Tools">
+<meta name="theme-color" content="#23675B">
+<title>Microtonal Ear Trainer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --bg2: #141418;
+    --bg3: #1a1a20;
+    --fg: #e8e8ee;
+    --dim: #555566;
+    --dim2: #333340;
+    --blue: #4ab4ff;
+    --orange: #ff8844;
+    --gold: #ffcc44;
+    --green: #44cc88;
+    --pink: #cc44aa;
+    --accent: #4ab4ff;
+    --border: #2a2a35;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  .container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 0 60px;
+  }
+
+  /* Header */
+  .header {
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .header h1 {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--fg);
+  }
+  .header .sub {
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.08em;
+  }
+
+  /* Display */
+  .display {
+    background: #08080b;
+    border-bottom: 1px solid var(--border);
+    padding: 28px 24px 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .display::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center top, rgba(74,180,255,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .note-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--fg);
+    letter-spacing: -0.02em;
+    transition: color 0.3s ease;
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .note-name.pulse {
+    animation: notepulse 0.25s ease-out;
+  }
+  @keyframes notepulse {
+    0% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+  .freq-display {
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: 6px;
+    letter-spacing: 0.1em;
+    min-height: 16px;
+  }
+  .history-display {
+    margin-top: 10px;
+    font-size: 11px;
+    color: #333344;
+    letter-spacing: 0.05em;
+    min-height: 18px;
+    word-spacing: 6px;
+  }
+
+  /* Transport */
+  .transport {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .start-btn {
+    width: 100%;
+    padding: 14px;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: var(--bg2);
+    color: var(--fg);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .start-btn:hover { background: var(--bg3); border-color: var(--dim); }
+  .start-btn.running {
+    background: #1a0808;
+    border-color: #660000;
+    color: #ff6666;
+  }
+  .start-btn.running:hover { background: #220a0a; }
+
+  /* Sections */
+  .section {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-label {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 14px;
+  }
+
+  /* Slider rows */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .slider-label {
+    width: 120px;
+    flex-shrink: 0;
+    color: var(--dim);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  .slider-value {
+    width: 80px;
+    flex-shrink: 0;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: right;
+  }
+  .slider-hint {
+    font-size: 10px;
+    color: var(--dim2);
+    width: 90px;
+    flex-shrink: 0;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    height: 2px;
+    background: var(--dim2);
+    border-radius: 0;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--fg);
+    border-radius: 0;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+  input[type=range].blue::-webkit-slider-thumb { background: var(--blue); }
+  input[type=range].orange::-webkit-slider-thumb { background: var(--orange); }
+  input[type=range].gold::-webkit-slider-thumb { background: var(--gold); }
+  input[type=range].green::-webkit-slider-thumb { background: var(--green); }
+  input[type=range].pink::-webkit-slider-thumb { background: var(--pink); }
+
+  /* Scale buttons */
+  .scale-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .scale-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--dim);
+    cursor: pointer;
+    border-radius: 1px;
+    transition: all 0.1s;
+    letter-spacing: 0.02em;
+  }
+  .scale-btn:hover { border-color: var(--dim); color: var(--fg); }
+  .scale-btn.active {
+    background: #0a1a2a;
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+
+  /* Interval grid */
+  .interval-section { margin-bottom: 8px; }
+  .interval-dir-label {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .interval-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .int-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 5px 0;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    cursor: pointer;
+    border-radius: 1px;
+    text-align: center;
+    transition: all 0.1s;
+  }
+  .int-btn.up { color: var(--blue); }
+  .int-btn.down { color: var(--orange); }
+  .int-btn.up.blocked { background: #0a1c2e; border-color: #003355; color: #6699bb; }
+  .int-btn.down.blocked { background: #1e0e00; border-color: #442200; color: #bb7744; }
+
+  /* Toggle buttons */
+  .toggle-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .toggle-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--dim);
+    cursor: pointer;
+    border-radius: 1px;
+    transition: all 0.1s;
+    letter-spacing: 0.04em;
+  }
+  .toggle-btn:hover { border-color: var(--dim); color: var(--fg); }
+  .toggle-btn.active {
+    background: #1a0e00;
+    border-color: #553300;
+    color: #886655;
+  }
+
+  /* Checkbox row */
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .check-row input[type=checkbox] {
+    width: 14px; height: 14px;
+    accent-color: var(--blue);
+    cursor: pointer;
+  }
+  .check-row label {
+    font-size: 11px;
+    color: var(--dim);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+  }
+
+  /* Wide bias label */
+  .bias-val {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gold);
+    text-align: right;
+  }
+
+  kbd {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--dim);
+  }
+  .spacebar-hint {
+    text-align: center;
+    padding: 10px;
+    font-size: 11px;
+    color: var(--dim2);
+  }
+  .wrap { max-width: 480px; margin: 0 auto; padding-top: 16px; }
+  .wrap > a:first-child { margin-left: 24px !important; color: var(--accent) !important; }
+  .ver { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--dim); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; vertical-align: middle; }
+  .snd { display: flex; gap: 8px; margin-top: 10px; }
+  .snd button { flex: 1; background: var(--bg2); color: var(--dim); border: 1px solid var(--border); font-family: 'Space Mono', monospace; font-size: 12px; padding: 10px; border-radius: 4px; cursor: pointer; }
+  .snd button.on { color: var(--accent); border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <a href="./" style="display:inline-block;margin:0 0 10px;font:600 14px system-ui,-apple-system,sans-serif;color:#23675B;text-decoration:none">&lsaquo; All tools</a>
+
+<div class="container">
+  <div class="header">
+    <h1>microtone-infinite <span class="ver">v2</span></h1>
+    <span class="sub">72-TET ear trainer</span>
+  </div>
+
+  <!-- Display -->
+  <div class="display">
+    <div class="note-name" id="noteName">—</div>
+    <div class="freq-display" id="freqDisplay"></div>
+    <div class="history-display" id="histDisplay"></div>
+  </div>
+
+  <!-- Transport -->
+  <div class="transport">
+    <button class="start-btn" id="startBtn" onclick="togglePlay()">START</button>
+    <div class="spacebar-hint"><kbd>space</kbd> to toggle</div>
+  </div>
+
+  <!-- Pitch Range -->
+  <div class="section">
+    <div class="section-label">Pitch Range</div>
+    <div class="slider-row">
+      <span class="slider-label">low note</span>
+      <input type="range" class="blue" id="loSlider" min="72" max="504" value="216" oninput="onLo(this.value)">
+      <span class="slider-value" id="loVal" style="color:var(--blue)">C3</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">high note</span>
+      <input type="range" class="orange" id="hiSlider" min="72" max="504" value="432" oninput="onHi(this.value)">
+      <span class="slider-value" id="hiVal" style="color:var(--orange)">A4</span>
+    </div>
+  </div>
+
+  <!-- Scale -->
+  <div class="section">
+    <div class="section-label">Scale</div>
+    <div class="scale-grid" id="scaleGrid"></div>
+  </div>
+
+  <!-- Drone -->
+  <div class="section">
+    <div class="section-label">Low Drone</div>
+    <div class="check-row">
+      <input type="checkbox" id="droneCheck" checked onchange="droneOn=this.checked">
+      <label for="droneCheck">enable drone</label>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">drone note</span>
+      <input type="range" class="blue" id="droneNote" min="24" max="60" value="37" oninput="onDroneNote(this.value)">
+      <span class="slider-value" id="droneNoteVal" style="color:var(--blue)">C#2</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">drone volume</span>
+      <input type="range" id="droneVol" min="0" max="100" value="40" oninput="onDroneVol(this.value)">
+      <span class="slider-value" id="droneVolVal">40%</span>
+    </div>
+  </div>
+
+  <!-- Tempo & Volume -->
+  <div class="section">
+    <div class="section-label">Tempo &amp; Volume</div>
+    <div class="slider-row">
+      <span class="slider-label">BPM</span>
+      <input type="range" id="bpmSlider" min="10" max="200" value="60" oninput="onBpm(this.value)">
+      <span class="slider-value" id="bpmVal" style="font-size:20px;font-family:'Unbounded',sans-serif">60</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">volume</span>
+      <input type="range" id="volSlider" min="0" max="100" value="50" oninput="onVol(this.value)">
+      <span class="slider-value" id="volVal">50%</span>
+    </div>
+    <div class="snd" id="sndRow"><button type="button" class="on" data-s="sine">sine</button><button type="button" data-s="piano">piano</button></div>
+  </div>
+
+  <!-- Intervals -->
+  <div class="section">
+    <div class="section-label">Block Intervals</div>
+
+    <div class="toggle-row">
+      <button class="toggle-btn active" id="unisonBtn" onclick="toggleUnison()">no unison</button>
+      <button class="toggle-btn active" id="octaveBtn" onclick="toggleOctave()">no octave</button>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:11px;color:var(--dim);letter-spacing:0.06em;">wide interval bias</span>
+      <span class="bias-val" id="biasVal">medium</span>
+    </div>
+    <div class="slider-row" style="margin-bottom:16px;">
+      <input type="range" class="gold" id="biasSlider" min="10" max="40" value="25" style="flex:1" oninput="onBias(this.value)">
+    </div>
+
+    <div class="interval-section">
+      <div class="interval-dir-label" style="color:var(--blue)">↑ upward</div>
+      <div class="interval-grid" id="upGrid"></div>
+      <div class="interval-dir-label" style="color:var(--orange);margin-top:4px;">↓ downward</div>
+      <div class="interval-grid" id="downGrid"></div>
+    </div>
+  </div>
+
+  <!-- Notch Filter -->
+  <div class="section">
+    <div class="section-label">Notch Filter</div>
+    <div class="check-row">
+      <input type="checkbox" id="notchCheck" checked onchange="notchOn=this.checked; rebuildNotch()">
+      <label for="notchCheck">enable notch (1-oct Q, −5 dB)</label>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">center freq</span>
+      <input type="range" class="green" id="notchFreq" min="80" max="8000" value="450" oninput="onNotchFreq(this.value)">
+      <span class="slider-value" id="notchFreqVal" style="color:var(--green);font-size:12px">450 Hz</span>
+    </div>
+  </div>
+
+  <!-- Pitch Rolloff -->
+  <div class="section">
+    <div class="section-label">Pitch Volume Rolloff</div>
+    <div class="slider-row">
+      <span class="slider-label">dB/oct cut</span>
+      <input type="range" class="pink" id="rolloffSlider" min="0" max="24" step="0.5" value="5" oninput="onRolloff(this.value)">
+      <span class="slider-value" id="rolloffVal" style="color:var(--pink);font-size:12px">5.0 dB/oct</span>
+    </div>
+  </div>
+
+  <!-- Crossfade & Fade-in -->
+  <div class="section">
+    <div class="section-label">Crossfade / Fade-in</div>
+    <div class="slider-row">
+      <span class="slider-label">crossfade tail</span>
+      <input type="range" class="green" id="xfadeSlider" min="1" max="20" value="10" oninput="onXfade(this.value)">
+      <span class="slider-value" id="xfadeVal" style="color:var(--green)">1.0×</span>
+      <span class="slider-hint">(extends note)</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">fade-in time</span>
+      <input type="range" id="fadeInSlider" min="1" max="160" value="30" oninput="onFadeIn(this.value)">
+      <span class="slider-value" id="fadeInVal">1.50 s</span>
+      <span class="slider-hint">(fixed length)</span>
+    </div>
+  </div>
+
+</div>
+
+</div>
+<script src="sounds.js"></script>
+<script>
+// ── 72-TET constants ───────────────────────────────────────────────────────
+const SR = 44100;
+const SEMITONE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const MICRO_SUFFIXES = ["","↑1","↑2","+½","↓2","↓1"];
+
+function stepToHz(step) {
+  return 440.0 * Math.pow(2, (step - 414) / 72.0); // step = MIDI note × 6, so A4 (MIDI 69) = 414
+}
+function stepToName(step) {
+  const octave = Math.floor(step / 72) - 1;
+  const pos = ((step % 72) + 72) % 72;
+  const semitone = Math.floor(pos / 6);
+  const micro = pos % 6;
+  return SEMITONE_NAMES[semitone] + MICRO_SUFFIXES[micro] + octave;
+}
+function midiToName(midi) {
+  return SEMITONE_NAMES[((midi % 12) + 12) % 12] + (Math.floor(midi / 12) - 1);
+}
+
+// ── Scale definitions ──────────────────────────────────────────────────────
+const SCALES_72 = {
+  "12-TET":       Array.from({length:12}, (_,i) => i*6),
+  "24-TET":       Array.from({length:24}, (_,i) => i*3),
+  "36-TET":       Array.from({length:36}, (_,i) => i*2),
+  "72-TET full":  Array.from({length:72}, (_,i) => i),
+  "major +micro": (() => {
+    const base = [0,2,4,5,7,9,11].map(i => i*6);
+    const s = new Set([...base, ...base.map(x=>x+1), ...base.map(x=>x-1)]);
+    return Array.from(s).sort((a,b)=>a-b);
+  })(),
+  "just 5-limit": [0,4,12,16,24,28,35,36,40,48,52,60],
+  "harmonic":     [0,6,14,18,24,30,36,42,46,54,60,66],
+};
+
+// ── State ──────────────────────────────────────────────────────────────────
+let bpm = 60, volume = 0.5, stepLo = 216, stepHi = 432;
+let scaleMode = "24-TET";
+let blockedUp = new Set(), blockedDown = new Set();
+let blockUnison = true, blockOctave = true;
+let wideBias = 2.5, pitchRolloff = 5.0, xfadeMult = 1.0, fadeInSec = 1.5;
+let droneOn = true, droneMidi = 37, droneVol = 0.4;
+let notchOn = true, notchFreq = 450;
+let recentNotes = [];
+let history = [];
+let running = false;
+
+// ── Audio context & nodes ──────────────────────────────────────────────────
+let actx = null;
+let droneOsc = null, droneGain = null;
+let masterGain = null;
+let notchFilter = null, hpfFilter = null;
+let scheduleTimer = null;
+let nextNoteTime = 0;
+
+let soundMode = "sine", liveSrc = [];
+function ensureAudio() {
+  if (actx) return;
+  actx = (window.MTS && MTS.ctx) || new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SR });
+  masterGain = actx.createGain();
+  masterGain.gain.value = volume;
+
+  hpfFilter = actx.createBiquadFilter();
+  hpfFilter.type = "highpass";
+  hpfFilter.frequency.value = 100;
+  hpfFilter.Q.value = 0.707;
+
+  notchFilter = actx.createBiquadFilter();
+  notchFilter.type = "notch";
+  notchFilter.frequency.value = notchFreq;
+  notchFilter.Q.value = 0.707;
+
+  // Chain: masterGain → hpf → notch → destination
+  masterGain.connect(hpfFilter);
+  hpfFilter.connect(notchFilter);
+  notchFilter.connect(actx.destination);
+
+  rebuildNotch();
+}
+
+function rebuildNotch() {
+  if (!notchFilter) return;
+  notchFilter.frequency.value = notchFreq;
+  notchFilter.gain.value = notchOn ? -5 : 0;
+  notchFilter.Q.value = notchOn ? 0.707 : 0.001;
+}
+
+function startDrone() {
+  if (!actx) return;
+  stopDrone();
+  if (!droneOn) return;
+  const freq = 440 * Math.pow(2, (droneMidi - 69) / 12);
+  droneOsc = actx.createOscillator();
+  droneOsc.type = "sine";
+  droneOsc.frequency.value = freq;
+  droneGain = actx.createGain();
+  droneGain.gain.value = droneVol * 0.35;
+  droneOsc.connect(droneGain);
+  droneGain.connect(masterGain);
+  droneOsc.start();
+}
+
+function stopDrone() {
+  if (droneOsc) { try { droneOsc.stop(); } catch(e){} droneOsc = null; }
+  if (droneGain) { droneGain.disconnect(); droneGain = null; }
+}
+
+// ── Note selection ─────────────────────────────────────────────────────────
+function randomNote() {
+  let lo = stepLo, hi = stepHi;
+  if (lo > hi) [lo, hi] = [hi, lo];
+  const scaleSteps = SCALES_72[scaleMode] || SCALES_72["72-TET full"];
+  const scaleSet = new Set(scaleSteps.map(s => ((s % 72) + 72) % 72));
+  let candidates = [];
+  for (let s = lo; s <= hi; s++) {
+    if (scaleSet.has(((s % 72) + 72) % 72)) candidates.push(s);
+  }
+  if (!candidates.length) {
+    for (let s = lo; s <= hi; s++) candidates.push(s);
+  }
+
+  // Block recent (last 8)
+  const blockedRecent = new Set(recentNotes.slice(1, 9));
+  let filtered = candidates.filter(m => !blockedRecent.has(m));
+  if (filtered.length) candidates = filtered;
+
+  // Filter by intervals from last note
+  const last = recentNotes[0] ?? null;
+  if (last !== null) {
+    let allowed = [];
+    for (const m of candidates) {
+      const diff = m - last;
+      const semidiff = Math.abs(diff);
+      if (semidiff === 0) {
+        if (!blockUnison) allowed.push(m);
+        continue;
+      }
+      if (semidiff > 0 && semidiff % 72 === 0) {
+        if (!blockOctave) allowed.push(m);
+        continue;
+      }
+      const remainder = semidiff % 72;
+      if (remainder !== 0 && remainder < 12) continue;
+      const interval = semidiff % 12;
+      if (diff > 0 && blockedUp.has(semidiff % 72)) continue;
+      if (diff < 0 && blockedDown.has(semidiff % 72)) continue;
+      allowed.push(m);
+    }
+    if (allowed.length) candidates = allowed;
+  }
+
+  // Weighted selection
+  let choice;
+  if (last === null || Math.abs(wideBias - 1.0) < 0.05) {
+    choice = candidates[Math.floor(Math.random() * candidates.length)];
+  } else {
+    const weights = candidates.map(m => Math.max(1, Math.abs(m - last)) ** wideBias);
+    const total = weights.reduce((a, b) => a + b, 0);
+    let r = Math.random() * total;
+    choice = candidates[candidates.length - 1];
+    for (let i = 0; i < candidates.length; i++) {
+      r -= weights[i];
+      if (r <= 0) { choice = candidates[i]; break; }
+    }
+  }
+
+  recentNotes.unshift(choice);
+  if (recentNotes.length > 9) recentNotes.pop();
+  return choice;
+}
+
+// ── Tone scheduling ────────────────────────────────────────────────────────
+function scheduleNote(when) {
+  if (!actx) return;
+  const step = randomNote();
+  const freq = stepToHz(step);
+  const name = stepToName(step);
+  const spbSec = 60.0 / Math.max(1, bpm);
+  const hold = 4 * spbSec;
+  const xfade = Math.min(hold * 2.0, hold * xfadeMult);
+  const dur = hold + xfade;
+
+  // Rolloff
+  let vol = volume;
+  if (pitchRolloff > 0) {
+    const refHz = stepToHz(360);
+    const octaves = Math.log2(Math.max(1, freq / refHz));
+    const dbCut = pitchRolloff * Math.max(0, octaves);
+    vol = Math.max(0.02, vol * Math.pow(10, -dbCut / 20));
+  }
+
+  const buf = actx.createBuffer(1, Math.ceil(SR * dur), SR);
+  const data = buf.getChannelData(0);
+  const n = data.length;
+  const fadeInSamples = Math.max(1, Math.min(Math.ceil(SR * fadeInSec), Math.ceil(n * 0.8)));
+  const holdSamples = Math.max(1, n - Math.ceil(SR * xfade));
+
+  for (let i = 0; i < n; i++) {
+    let env = 1;
+    if (i < fadeInSamples) {
+      env = (1 - Math.cos(Math.PI * i / fadeInSamples)) * 0.5;
+    } else if (i >= holdSamples) {
+      const rel = (i - holdSamples) / (n - holdSamples);
+      env = (1 + Math.cos(Math.PI * rel)) * 0.5;
+    }
+    data[i] = Math.sin(2 * Math.PI * freq * i / SR) * env * vol * 0.55;
+  }
+
+  if (soundMode === "piano" && window.MTS && MTS.ready) {
+    const p = MTS.piano(step / 6, when, hold, Math.min(1, 0.35 + vol), masterGain);
+    if (p) liveSrc.push(p);
+  } else {
+    const src = actx.createBufferSource();
+    src.buffer = buf;
+    src.connect(masterGain);
+    src.start(when);
+    src.stop(when + dur + 0.01);
+    liveSrc.push(src);
+  }
+  if (liveSrc.length > 40) liveSrc.splice(0, liveSrc.length - 40);
+
+  // Update display
+  const displayAt = when - actx.currentTime;
+  setTimeout(() => {
+    updateDisplay(name, freq, step);
+  }, Math.max(0, displayAt * 1000));
+}
+
+let schedulerInterval = null;
+const LOOKAHEAD = () => document.hidden ? 8 : 0.2; // seconds (long when the screen is off)
+const SCHEDULE_INTERVAL = 80; // ms
+
+function scheduler() {
+  if (!actx || !running) return;
+  while (nextNoteTime < actx.currentTime + LOOKAHEAD()) {
+    scheduleNote(nextNoteTime);
+    const spbSec = 60.0 / Math.max(1, bpm);
+    nextNoteTime += 4 * spbSec;
+  }
+}
+
+function updateDisplay(name, freq, step) {
+  const el = document.getElementById('noteName');
+  el.textContent = name;
+  el.classList.remove('pulse');
+  void el.offsetWidth;
+  el.classList.add('pulse');
+
+  const octave = Math.floor(step / 72);
+  const colors = ["#884488","#4466cc","#44aacc","#44bb66","#bbaa22","#cc7722","#cc4444"];
+  el.style.color = colors[Math.min(octave, colors.length - 1)];
+
+  document.getElementById('freqDisplay').textContent = freq.toFixed(1) + ' Hz';
+
+  history.push(name);
+  if (history.length > 8) history.shift();
+  document.getElementById('histDisplay').textContent = history.join('  ');
+}
+
+// ── Transport ──────────────────────────────────────────────────────────────
+function togglePlay() {
+  if (running) {
+    stopPlay();
+  } else {
+    startPlay();
+  }
+}
+
+async function startPlay() {
+  if (window.MTS) { try { await MTS.start(); } catch (e) {} }
+  ensureAudio();
+  if (actx.state !== 'running') await actx.resume();
+  if (window.MTS) { MTS.wantAwake = true; MTS.keepAwake(true); }
+  running = true;
+  recentNotes = [];
+  history = [];
+  document.getElementById('noteName').textContent = '—';
+  document.getElementById('noteName').style.color = 'var(--fg)';
+  document.getElementById('freqDisplay').textContent = '';
+  document.getElementById('histDisplay').textContent = '';
+  nextNoteTime = actx.currentTime + 0.05;
+  schedulerInterval = setInterval(scheduler, SCHEDULE_INTERVAL);
+  scheduler();
+  startDrone();
+  const btn = document.getElementById('startBtn');
+  btn.textContent = 'STOP';
+  btn.classList.add('running');
+}
+
+function stopPlay() {
+  running = false;
+  clearInterval(schedulerInterval);
+  schedulerInterval = null;
+  for (const x of liveSrc) { try { x.stop(); } catch (e) {} }
+  liveSrc = [];
+  if (window.MTS) { MTS.wantAwake = false; MTS.keepAwake(false); }
+  stopDrone();
+  const btn = document.getElementById('startBtn');
+  btn.textContent = 'START';
+  btn.classList.remove('running');
+  document.getElementById('noteName').textContent = '—';
+  document.getElementById('noteName').style.color = 'var(--fg)';
+  document.getElementById('freqDisplay').textContent = '';
+}
+
+// ── UI handlers ────────────────────────────────────────────────────────────
+function onBpm(v) {
+  bpm = parseInt(v);
+  document.getElementById('bpmVal').textContent = bpm;
+}
+function onVol(v) {
+  volume = parseInt(v) / 100;
+  document.getElementById('volVal').textContent = v + '%';
+  if (masterGain) masterGain.gain.value = volume;
+}
+function onLo(v) {
+  stepLo = parseInt(v);
+  document.getElementById('loVal').textContent = stepToName(stepLo);
+}
+function onHi(v) {
+  stepHi = parseInt(v);
+  document.getElementById('hiVal').textContent = stepToName(stepHi);
+}
+function onDroneNote(v) {
+  droneMidi = parseInt(v);
+  document.getElementById('droneNoteVal').textContent = midiToName(droneMidi);
+  if (running) startDrone();
+}
+function onDroneVol(v) {
+  droneVol = parseInt(v) / 100;
+  document.getElementById('droneVolVal').textContent = v + '%';
+  if (droneGain) droneGain.gain.value = droneVol * 0.35;
+}
+function onNotchFreq(v) {
+  notchFreq = parseFloat(v);
+  document.getElementById('notchFreqVal').textContent = Math.round(notchFreq) + ' Hz';
+  rebuildNotch();
+}
+function onRolloff(v) {
+  pitchRolloff = parseFloat(v);
+  const lbl = pitchRolloff < 0.1 ? 'off' : pitchRolloff.toFixed(1) + ' dB/oct';
+  document.getElementById('rolloffVal').textContent = lbl;
+}
+function onXfade(v) {
+  xfadeMult = parseInt(v) / 10;
+  document.getElementById('xfadeVal').textContent = xfadeMult.toFixed(1) + '×';
+}
+function onFadeIn(v) {
+  fadeInSec = parseInt(v) / 20;
+  document.getElementById('fadeInVal').textContent = fadeInSec.toFixed(2) + ' s';
+}
+function onBias(v) {
+  wideBias = parseInt(v) / 10;
+  let label = 'flat';
+  if (wideBias >= 1.1 && wideBias < 2.0) label = 'slight';
+  else if (wideBias >= 2.0 && wideBias < 3.0) label = 'medium';
+  else if (wideBias >= 3.0) label = 'strong';
+  document.getElementById('biasVal').textContent = label;
+}
+
+function toggleUnison() {
+  blockUnison = !blockUnison;
+  const btn = document.getElementById('unisonBtn');
+  btn.classList.toggle('active', blockUnison);
+}
+function toggleOctave() {
+  blockOctave = !blockOctave;
+  const btn = document.getElementById('octaveBtn');
+  btn.classList.toggle('active', blockOctave);
+}
+
+// ── Scale buttons ──────────────────────────────────────────────────────────
+const scaleNames = Object.keys(SCALES_72);
+const scaleGrid = document.getElementById('scaleGrid');
+scaleNames.forEach(name => {
+  const btn = document.createElement('button');
+  btn.className = 'scale-btn' + (name === scaleMode ? ' active' : '');
+  btn.textContent = name;
+  btn.onclick = () => {
+    scaleMode = name;
+    document.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  };
+  scaleGrid.appendChild(btn);
+});
+
+// ── Interval buttons ───────────────────────────────────────────────────────
+const intervalDefs = [
+  [6,"m2"],[12,"M2"],[18,"m3"],[24,"M3"],[30,"P4"],[36,"TT"],
+  [42,"P5"],[48,"m6"],[54,"M6"],[60,"m7"],[66,"M7"],[72,"Oct"]
+];
+
+function buildIntervalGrid(gridId, direction, blockedSet, cssClass) {
+  const grid = document.getElementById(gridId);
+  intervalDefs.forEach(([steps, name]) => {
+    const btn = document.createElement('button');
+    btn.className = `int-btn ${cssClass}`;
+    btn.textContent = name;
+    btn.dataset.steps = steps;
+    btn.onclick = () => {
+      if (blockedSet.has(steps)) {
+        blockedSet.delete(steps);
+        btn.classList.remove('blocked');
+      } else {
+        blockedSet.add(steps);
+        btn.classList.add('blocked');
+      }
+    };
+    grid.appendChild(btn);
+  });
+}
+buildIntervalGrid('upGrid', 'up', blockedUp, 'up');
+buildIntervalGrid('downGrid', 'down', blockedDown, 'down');
+
+// ── Keyboard ───────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && e.target === document.body) {
+    e.preventDefault();
+    togglePlay();
+  }
+});
+
+document.querySelectorAll('#sndRow button').forEach(b => b.addEventListener('click', () => {
+  soundMode = b.dataset.s;
+  document.querySelectorAll('#sndRow button').forEach(x => x.classList.toggle('on', x === b));
+  if (soundMode === 'piano' && window.MTS) MTS.start().catch(() => {});
+}));
+document.addEventListener('visibilitychange', () => { if (running) scheduler(); });
+
+// ── Initial label updates ──────────────────────────────────────────────────
+document.getElementById('loVal').textContent = stepToName(216);
+document.getElementById('hiVal').textContent = stepToName(432);
+document.getElementById('droneNoteVal').textContent = midiToName(37);
+</script>
+
+<script>if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
+</body>
+</html>
