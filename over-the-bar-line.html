@@ -80,6 +80,11 @@ h2{font-family:var(--display);font-weight:700;font-size:16px;margin:0}
 .pat small{display:block;font:500 13px var(--body);color:var(--muted);margin-top:4px}
 label.check{display:flex;gap:10px;align-items:center;font-size:14px}
 label.check input{width:20px;height:20px;accent-color:var(--accent)}
+.tf{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tfl{font:600 13px var(--body);color:var(--muted)}
+button.tog{min-height:40px;padding:9px 14px;font-size:14px}
+button.tog[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.aligned{margin:2px 0 0 30px;font:600 12px var(--mono);color:var(--brass)}
 </style>
 </head>
 <body>
@@ -88,14 +93,20 @@ label.check input{width:20px;height:20px;accent-color:var(--accent)}
   <a href="./" style="display:inline-block;margin:0 0 10px;font:600 14px system-ui,-apple-system,sans-serif;color:#23675B;text-decoration:none">&lsaquo; All tools</a>
 
   <header>
-    <h1>Over the Bar Line <span class="ver">v4</span></h1>
+    <h1>Over the Bar Line <span class="ver">v8</span></h1>
     <p class="sub">A steady 4/4 metronome with a grouping pattern played against it as digital boops, over an optional simple drum loop. Groups of notes with a space after each keep sliding across the bar line until they line up again.</p>
   </header>
   <section class="card">
     <div class="pat" id="patName">3 + space<small id="patInfo"></small></div>
     <div class="bars" id="bars"></div>
     <div class="legend"><span><i style="background:var(--accent)"></i>group start</span><span><i style="background:color-mix(in oklab,var(--accent) 45%,var(--chip))"></i>note</span><span><i style="background:var(--chip)"></i>space</span></div>
-    <div class="controls"><button id="play" class="primary" type="button">Play</button><span class="status" id="status">Bar –</span></div>
+    <div class="controls"><button id="play" class="primary" type="button">Play</button><button id="randPat" type="button">Random pattern</button><button id="newTune" type="button">New tune</button><span class="status" id="status">Bar –</span></div>
+    <div class="tf" role="group" aria-label="Change the tune each time">
+      <span class="tfl">Each time round:</span>
+      <button type="button" class="tog" id="tRetro" aria-pressed="false">Retrograde</button>
+      <button type="button" class="tog" id="tInv" aria-pressed="false">Inversion</button>
+      <button type="button" class="tog" id="tMove" aria-pressed="false">Raise / lower</button>
+    </div>
   </section>
   <section class="card">
     <div class="grid">
@@ -112,34 +123,32 @@ label.check input{width:20px;height:20px;accent-color:var(--accent)}
       <div class="f"><label for="vPat">Pattern</label><input id="vPat" type="range" min="0" max="1" step="0.05" value="0.8"></div>
       <div class="f"><label for="drums">Drum loop</label>
         <select id="drums"><option value="off">Off</option><option value="0.5" selected>Straight</option><option value="0.6">Slight swing</option><option value="0.66">Swing</option></select></div>
-      <div class="f"><label for="vDrum">Drums</label><input id="vDrum" type="range" min="0" max="1" step="0.05" value="0.7"></div>
+      <div class="f"><label for="kit">Drum sound</label>
+        <select id="kit"><option value="soft" selected>Acoustic, softer</option><option value="acoustic">Acoustic kit</option><option value="light">Light (soft kick, rim, tight hat)</option><option value="brush">Brushes</option></select></div>
+      <div class="f"><label for="vDrum">Drums</label><input id="vDrum" type="range" min="0" max="1" step="0.05" value="0.6"></div>
     </div>
     <div class="grid">
       <div class="f"><label for="pitch">Boop pitches</label>
         <select id="pitch">
-          <option value="single" selected>Single note</option>
+          <option value="motif" selected>Random tune (repeats)</option>
+          <option value="single">Single note</option>
           <option value="rand">Random every note</option>
-          <option value="motif">Random tune (repeats)</option>
           <option value="up">Ascending in each group</option>
           <option value="down">Descending in each group</option>
           <option value="updown">Up, then down (alternating groups)</option>
-          <option value="retro">Tune, then retrograde</option>
-          <option value="inv">Tune, then inversion</option>
-          <option value="all4">Tune → retrograde → inversion → retro-inversion</option>
-          <option value="seq">Tune, moved by an interval each loop (up to the top, then down)</option>
         </select></div>
+      <div class="f"><label for="timbre">Note sound</label>
+        <select id="timbre"><option value="pluck" selected>Strong pluck</option><option value="marimba">Marimba</option><option value="bell">Bell</option><option value="square">Square lead</option><option value="soft">Soft boop</option></select></div>
       <div class="f"><label for="scale">Scale</label>
         <select id="scale"><option value="pent" selected>Major pentatonic</option><option value="maj">Major</option><option value="min">Natural minor</option><option value="chr">Chromatic</option></select></div>
-      <div class="f" id="everyBox"><label for="every">Change after</label>
-        <select id="every"><option value="cycle" selected>Each full loop (back to beat 1)</option><option value="rep">Each time the pattern repeats</option></select></div>
+      <div class="f" id="everyBox"><label for="every">“Each time round” means</label>
+        <select id="every"><option value="rep" selected>Each time the pattern repeats</option><option value="cycle">Each full loop (back to beat 1)</option></select></div>
       <div class="f seqOnly"><label for="ivl">Interval</label>
         <select id="ivl"><option value="1">Half step</option><option value="2" selected>Whole step</option><option value="3">Minor 3rd</option><option value="4">Major 3rd</option><option value="5">4th</option><option value="7">5th</option></select></div>
       <div class="f seqOnly"><label for="lo">Lowest note</label><select id="lo"><option value="55">G3</option><option value="57">A3</option><option value="60" selected>C4</option><option value="62">D4</option><option value="64">E4</option><option value="65">F4</option><option value="67">G4</option><option value="69">A4</option><option value="72">C5</option><option value="74">D5</option><option value="76">E5</option><option value="77">F5</option><option value="79">G5</option><option value="81">A5</option><option value="84">C6</option><option value="86">D6</option><option value="88">E6</option><option value="91">G6</option><option value="96">C7</option></select></div>
       <div class="f seqOnly"><label for="hi">Highest note</label><select id="hi"><option value="55">G3</option><option value="57">A3</option><option value="60">C4</option><option value="62">D4</option><option value="64">E4</option><option value="65">F4</option><option value="67">G4</option><option value="69">A4</option><option value="72">C5</option><option value="74">D5</option><option value="76">E5</option><option value="77">F5</option><option value="79">G5</option><option value="81">A5</option><option value="84" selected>C6</option><option value="86">D6</option><option value="88">E6</option><option value="91">G6</option><option value="96">C7</option></select></div>
-      <div class="f"><label>&nbsp;</label><button id="newTune" type="button">New tune</button></div>
     </div>
     <p class="hint" id="formHint"></p>
-    <div class="controls"><button id="randPat" type="button">Random pattern</button></div>
     <label class="check"><input id="avoid" type="checkbox" checked> Avoid patterns that fit evenly in a bar (4, 8, 12 or 16 long)</label>
     <p class="hint" id="avoidNote" hidden></p>
     <label class="check"><input id="alt" type="checkbox"> Pattern drops out every other cycle (you play it)</label>
@@ -170,12 +179,21 @@ function tick(ctx,dest,t,accent){ // metronome click; METRO.kind picks the sound
     o.connect(lp); lp.connect(g); g.connect(dest); o.start(t); o.stop(t+0.05); }
   else if(k==="rim"){ burst(ctx,dest,t,1800*tn,4,a?2.0:1.4,0.04); burst(ctx,dest,t,5000*tn,1,a?0.5:0.3,0.015); sineHit(ctx,dest,t,420*tn,380*tn,a?0.35:0.25,0.03); }
   else { burst(ctx,dest,t,a?2600:3800,1.2,a?1.4:0.8,a?0.035:0.022); if(a) burst(ctx,dest,t,1200,0.9,0.5,0.03); } }
-function tok(ctx,dest,t,accent,f){ // digital boop; group starts are louder
-  f=f||740; const o=ctx.createOscillator(), o2=ctx.createOscillator(), lp=ctx.createBiquadFilter(), g=ctx.createGain();
-  o.type="square"; o2.type="sine"; o.frequency.value=f; o2.frequency.value=f; lp.type="lowpass"; lp.frequency.value=Math.max(2200,f*3); lp.Q.value=2;
-  const m=ctx.createGain(); m.gain.value=0.35; o.connect(m); m.connect(lp); o2.connect(lp); lp.connect(g);
-  const pk=accent?0.5:0.3; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(pk,t+0.004); g.gain.setValueAtTime(pk,t+0.03); g.gain.exponentialRampToValueAtTime(0.0001,t+0.11);
-  g.connect(dest); o.start(t); o2.start(t); o.stop(t+0.13); o2.stop(t+0.13); }
+const TIMBRE={kind:"pluck"};
+function env(ctx,g,t,pk,att,hold,dec){ g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(pk,t+att); g.gain.setValueAtTime(pk,t+att+hold); g.gain.exponentialRampToValueAtTime(0.0001,t+att+hold+dec); return att+hold+dec; }
+function osc(ctx,type,f,t,end,dest,det){ const o=ctx.createOscillator(); o.type=type; o.frequency.value=f; if(det) o.detune.value=det; o.connect(dest); o.start(t); o.stop(t+end+0.02); return o; }
+function tok(ctx,dest,t,accent,f){ // pitched pattern note; TIMBRE.kind picks the sound, group starts are louder
+  f=f||740; const k=TIMBRE.kind, a=accent?1:0.7, g=ctx.createGain(); g.connect(dest);
+  if(k==="pluck"){ // strong digital pluck: saw + square through a snapping filter
+    const lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.Q.value=5; lp.frequency.setValueAtTime(Math.min(12000,f*12),t); lp.frequency.exponentialRampToValueAtTime(Math.max(500,f*1.6),t+0.16); lp.connect(g);
+    const end=env(ctx,g,t,0.32*a,0.003,0.02,0.2); osc(ctx,"sawtooth",f,t,end,lp,-6); osc(ctx,"square",f,t,end,lp,6); const sub=ctx.createGain(); sub.gain.value=0.6; sub.connect(g); osc(ctx,"sine",f/2,t,end,sub); }
+  else if(k==="marimba"){ const end=env(ctx,g,t,0.8*a,0.002,0,0.35); osc(ctx,"sine",f,t,end,g); const h=ctx.createGain(); env(ctx,h,t,0.35*a,0.001,0,0.05); h.connect(dest); osc(ctx,"sine",f*4,t,0.06,h); }
+  else if(k==="bell"){ const end=env(ctx,g,t,0.85*a,0.003,0,0.9); const car=osc(ctx,"sine",f,t,end,g), mod=ctx.createOscillator(), mg=ctx.createGain(); mod.frequency.value=f*3.5;
+    mg.gain.setValueAtTime(f*1.5,t); mg.gain.exponentialRampToValueAtTime(f*0.05,t+0.6); mod.connect(mg); mg.connect(car.frequency); mod.start(t); mod.stop(t+end+0.02); }
+  else if(k==="square"){ const lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=Math.min(9000,f*6); lp.connect(g); const end=env(ctx,g,t,0.5*a,0.003,0.06,0.08); osc(ctx,"square",f,t,end,lp); }
+  else { // soft boop (the earlier sound)
+    const lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=Math.max(2200,f*3); lp.Q.value=2; lp.connect(g);
+    const m=ctx.createGain(); m.gain.value=0.35; m.connect(lp); const end=env(ctx,g,t,accent?0.5:0.3,0.004,0.03,0.08); osc(ctx,"square",f,t,end,m); osc(ctx,"sine",f,t,end,lp); } }
 
 const gcd=(a,b)=>b?gcd(b,a%b):a;
 function pattern(){ const a=+$("a").value, as=+$("as").value; const p=[]; const add=(n,s)=>{ for(let i=0;i<n;i++) p.push(i===0?2:1); for(let i=0;i<s;i++) p.push(0); };
@@ -192,12 +210,13 @@ function label(){ const cmp=$("mode").value==="compound"; const sp=n=>n===1?"spa
   const L=pattern().length, cb=cycleBars(); $("patInfo").textContent="repeats every "+L+" · lines up again after "+cb+" bar"+(cb>1?"s":"");
   document.querySelectorAll(".cmp").forEach(x=>x.hidden=!cmp); drawBars(); }
 let shownOff=0;
-function drawBars(){ const sub=+$("sub").value, per=4*sub, p=pattern(), cb=Math.min(cycleBars(),8), box=$("bars"); box.textContent="";
+function drawBars(){ const sub=+$("sub").value, per=4*sub, p=pattern(), cb=Math.min(cycleBars(),64), box=$("bars"); box.textContent="";
   for(let b=0;b<cb;b++){ const row=document.createElement("div"); row.className="barRow"; const lab=document.createElement("span"); lab.textContent=b+1; row.appendChild(lab);
     const cells=document.createElement("div"); cells.className="cells"; cells.style.gridTemplateColumns="repeat("+per+",1fr)";
     for(let i=0;i<per;i++){ const v=p[(b*per+i)%p.length], c=document.createElement("div"); c.className="cell"+(i%sub===0?" beat":"")+(v?" note":"")+(v===2?" first":""); c.id="c"+b+"_"+i; cells.appendChild(c); }
     row.appendChild(cells); box.appendChild(row); }
-  if(cycleBars()>8){ const n=document.createElement("p"); n.className="hint"; n.textContent="Showing the first 8 of "+cycleBars()+" bars."; box.appendChild(n); } }
+  const done=document.createElement("p"); done.className="aligned"; done.textContent="↺ lines up with beat 1 again here"; box.appendChild(done);
+  if(cycleBars()>64){ const n=document.createElement("p"); n.className="hint"; n.textContent="Showing the first 64 of "+cycleBars()+" bars."; box.appendChild(n); } }
 // ---------- boop pitches ----------
 const SCALES={pent:[0,2,4,7,9],maj:[0,2,4,5,7,9,11],min:[0,2,3,5,7,8,10],chr:[0,1,2,3,4,5,6,7,8,9,10,11]};
 const BASE=72; // C5
@@ -205,42 +224,61 @@ function degMidi(d){ const sc=SCALES[$("scale").value], n=sc.length, o=Math.floo
 let tune=[];
 function noteMap(){ const p=pattern(), m=[]; let k=0, gi=-1, ig=0; for(const v of p){ if(v===2){ gi++; ig=0; } if(v){ m.push({k,gi,ig}); k++; ig++; } else m.push(null); } return m; }
 function newTune(){ const n=noteMap().filter(Boolean).length, span=SCALES[$("scale").value].length; tune=[]; let d=0;
-  for(let i=0;i<n;i++){ d=i?Math.max(0,Math.min(span+1,d+[-2,-1,1,2,3,-3][Math.floor(Math.random()*6)])):Math.floor(Math.random()*span); tune.push(d); } }
+  for(let tries=0;tries<50;tries++){ tune=[]; d=Math.floor(Math.random()*span);
+    for(let i=0;i<n;i++){ if(i){ let nd, t=0; do{ nd=Math.max(0,Math.min(span+1,d+[-2,-1,1,2,3,-3][Math.floor(Math.random()*6)])); t++; }while(nd===d&&t<20); d=nd; } tune.push(d); }
+    if(n<2||tune[n-1]!==tune[0]) break; } } // no repeated neighbours, and the end doesn't repeat the start when it loops
+function baseDegs(){ // one degree per note of the pattern, before any transform
+  const mode=$("pitch").value, nm=noteMap().filter(Boolean);
+  if(mode==="up") return nm.map(x=>x.ig);
+  if(mode==="down") return nm.map(x=>4-x.ig);
+  if(mode==="updown") return nm.map(x=>x.gi%2?4-x.ig:x.ig);
+  if(mode==="single") return nm.map(()=>2);
+  if(tune.length!==nm.length) newTune(); return tune; }
+const on=id=>$(id).getAttribute("aria-pressed")==="true";
 function pitchFor(j,rep){ // j = position in pattern, rep = how many times the pattern has gone round
   const mode=$("pitch").value, nm=noteMap()[j]; if(!nm) return 0;
-  if(mode==="single") return 740;
-  const hz=d=>440*Math.pow(2,(degMidi(d)-69)/12);
-  if(mode==="rand") return hz(Math.floor(Math.random()*SCALES[$("scale").value].length*1.6)-2);
-  if(mode==="up") return hz(nm.ig);
-  if(mode==="down") return hz(4-nm.ig);
-  if(mode==="updown") return hz(nm.gi%2?4-nm.ig:nm.ig);
-  if(tune.length!==noteMap().filter(Boolean).length) newTune();
-  const n=tune.length, u=unitOf(rep), form=formOf(u);
-  const k=(form===1||form===3)?n-1-nm.k:nm.k; let d=tune[k];
-  if(form>=2) d=2*tune[0]-d;
-  if(mode==="seq") return 440*Math.pow(2,(degMidi(d)+seqOffset(u)-69)/12);
-  return hz(d); }
+  const toHz=m=>440*Math.pow(2,(m-69)/12);
+  if(mode==="rand"){ let m, t=0; do{ m=degMidi(Math.floor(Math.random()*SCALES[$("scale").value].length*1.6)-2); t++; }while(m===lastM&&t<20); lastM=m; return toHz(m); }
+  const base=baseDegs(), n=base.length, u=unitOf(rep), form=formOf(u);
+  const k=(form===1||form===3)?n-1-nm.k:nm.k; let d=base[k];
+  if(form>=2) d=2*base[0]-d;
+  const off=on("tMove")?seqOffset(u,base):0;
+  let m=(mode==="single"?78:degMidi(d))+off;
+  if(mode!=="single" && m===lastM){ const up=degMidi(d+1)+off, dn=degMidi(d-1)+off; m=(up<=+$("hi").value+12)?up:dn; }
+  lastM=m; return toHz(m); }
+let lastM=null;
+// drums: light and brush kits are synthesized and soft; acoustic uses the recorded kit
+let softBus=null;
+function drum(name,t,v){ const kit=$("kit").value; if(kit==="acoustic"){ MTS.drum(name,t,v,drm); return; }
+  if(kit==="soft"){ MTS.drum(name,t,v*(name==="snare"?0.7:name==="kick"?0.85:0.8),softBus); return; }
+  if(name==="kick"){ const o=ctx.createOscillator(), g=ctx.createGain(); o.frequency.setValueAtTime(kit==="brush"?95:120,t); o.frequency.exponentialRampToValueAtTime(50,t+0.1);
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.55*v,t+0.004); g.gain.exponentialRampToValueAtTime(0.0001,t+(kit==="brush"?0.18:0.14)); o.connect(g); g.connect(drm); o.start(t); o.stop(t+0.2); return; }
+  if(name==="snare"){ if(kit==="brush"){ burst(ctx,drm,t,3500,0.6,0.5*v,0.16); burst(ctx,drm,t,1200,0.8,0.25*v,0.08); }
+    else { burst(ctx,drm,t,1900,3.5,1.1*v,0.035); const o=ctx.createOscillator(), g=ctx.createGain(); o.frequency.value=330; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.18*v,t+0.002); g.gain.exponentialRampToValueAtTime(0.0001,t+0.03); o.connect(g); g.connect(drm); o.start(t); o.stop(t+0.04); } return; }
+  if(kit==="brush") burst(ctx,drm,t,6000,0.7,0.28*v,0.07); else burst(ctx,drm,t,9000,1.2,0.35*v,0.03); }
 function unitOf(rr){ if($("every").value!=="cycle") return rr; const L=pattern().length, per=4*+$("sub").value; return Math.floor(rr/(cycleBars()*per/L)); }
-function formOf(u){ const m=$("pitch").value; return m==="retro"?u%2:m==="inv"?(u%2)*2:m==="all4"?u%4:0; }
-function seqOffset(u){ // bounce between the note limits, moving by the interval each loop
-  const ms=tune.map(degMidi), mn=Math.min(...ms), mx=Math.max(...ms), iv=+$("ivl").value;
+function formOf(u){ const R=on("tRetro"), I=on("tInv"); if($("pitch").value==="rand") return 0; return R&&I?u%4:R?u%2:I?(u%2)*2:0; }
+function seqOffset(u,base){ // bounce between the note limits, moving by the interval each time round
+  const ms=$("pitch").value==="single"?[78]:(base||tune).map(degMidi), mn=Math.min(...ms), mx=Math.max(...ms), iv=+$("ivl").value;
   let lo=+$("lo").value-mn, hi=+$("hi").value-mx; if(hi<lo){ const c=Math.round((lo+hi)/2); lo=hi=c; }
   const steps=Math.floor((hi-lo)/iv); if(!steps) return lo; const s=Math.max(0,Math.min(steps,Math.round((0-lo)/iv)));
   const x=(s+u)%(2*steps), idx=x<=steps?x:2*steps-x; return lo+idx*iv; }
-function statusTag(rr){ const m=$("pitch").value, u=unitOf(rr);
-  if(m==="seq"){ const o=seqOffset(u); return o===0?"home key":(o>0?"+":"")+o+" semitone"+(Math.abs(o)===1?"":"s"); }
-  return ["retro","inv","all4"].includes(m)?FORMS[formOf(u)]:""; }
+function statusTag(rr){ const u=unitOf(rr), parts=[];
+  if(on("tRetro")||on("tInv")) parts.push(FORMS[formOf(u)]);
+  if(on("tMove")){ const o=seqOffset(u,baseDegs()); parts.push(o===0?"home":(o>0?"+":"")+o+" st"); }
+  return parts.join(", "); }
 const FORMS=["tune","retrograde","inversion","retro-inversion"];
-let rep=0, drm=null, ctx=null, met=null, pat=null, playing=false, timer=null, raf=0, next=0, bar=0, pos=0, vis=[], cyc=0;
+let b0=0, rep=0, drm=null, ctx=null, met=null, pat=null, playing=false, timer=null, raf=0, next=0, bar=0, pos=0, vis=[], cyc=0;
 function schedBar(t0){ const sub=+$("sub").value, per=4*sub, beatLen=60/+$("tempo").value, step=beatLen/sub, p=pattern(), cb=cycleBars();
-  if(pos%p.length===0 && bar% cb===0) pos=0;
+  if(pos%p.length===0 && (bar-b0)%cb===0) pos=0;
   const L=p.length;
-  const silent=$("alt").checked && Math.floor(bar/cb)%2===1;
+  const silent=$("alt").checked && Math.floor((bar-b0)/cb)%2===1;
   const dv=$("drums").value, sw=dv==="off"?0.5:+dv, sT=(bt,off)=>t0+bt*beatLen+(off?sw*beatLen:0);
   for(let i=0;i<4;i++) tick(ctx,met,t0+i*beatLen,i===0);
-  if(dv!=="off"){ for(let i=0;i<4;i++){ MTS.drum("hihat",sT(i,false),i%2?0.45:0.6,drm); MTS.drum("hihat",sT(i,true),0.3,drm); }
-    MTS.drum("kick",sT(0,false),0.9,drm); MTS.drum("kick",sT(2,false),0.75,drm); MTS.drum("kick",sT(2,true),0.35,drm); MTS.drum("snare",sT(1,false),0.6,drm); MTS.drum("snare",sT(3,false),0.65,drm); }
-  for(let i=0;i<per;i++){ const v=p[(pos+i)%p.length]; const tt=sub===2&&i%2===1?t0+Math.floor(i/2)*beatLen+sw*beatLen:t0+i*step; const rr=rep+Math.floor((pos+i)/L); if(v&&!silent) tok(ctx,pat,tt,v===2,pitchFor((pos+i)%L,rr)); vis.push({form:statusTag(rr),t:sub===2&&i%2===1?t0+Math.floor(i/2)*beatLen+sw*beatLen:t0+i*step,cell:(bar%Math.min(cb,8))+"_"+i,bar,show:bar%cb<8,silent}); }
+  if(dv!=="off"){ const D=(n,t,v)=>drum(n,t,v);
+    for(let i=0;i<4;i++){ D("hihat",sT(i,false),i%2?0.45:0.6); D("hihat",sT(i,true),0.3); }
+    D("kick",sT(0,false),0.9); D("kick",sT(2,false),0.75); D("kick",sT(2,true),0.35); D("snare",sT(1,false),0.6); D("snare",sT(3,false),0.65); }
+  for(let i=0;i<per;i++){ const v=p[(pos+i)%p.length]; const tt=sub===2&&i%2===1?t0+Math.floor(i/2)*beatLen+sw*beatLen:t0+i*step; const rr=rep+Math.floor((pos+i)/L); if(v&&!silent) tok(ctx,pat,tt,v===2,pitchFor((pos+i)%L,rr)); vis.push({form:statusTag(rr),t:sub===2&&i%2===1?t0+Math.floor(i/2)*beatLen+sw*beatLen:t0+i*step,cell:((bar-b0)%cb)+"_"+i,bar,show:(bar-b0)%cb<64,silent}); }
   rep+=Math.floor((pos+per)/L); pos=(pos+per)%L; bar++; return 4*beatLen; }
 function tickSched(){ while(playing && next<ctx.currentTime+LOOKAHEAD()) next+=schedBar(next); }
 function loop(){ raf=requestAnimationFrame(loop); const now=ctx.currentTime; let cur=null; while(vis.length&&vis[0].t<=now) cur=vis.shift(); if(!cur) return;
@@ -248,20 +286,22 @@ function loop(){ raf=requestAnimationFrame(loop); const now=ctx.currentTime; let
   $("status").textContent="Bar "+(cur.bar+1)+(cur.silent?" · your turn":"")+(cur.form?" · "+cur.form:""); }
 async function start(){ await MTS.start(); ctx=MTS.ctx; noiseInit(ctx);
   met=ctx.createGain(); met.gain.value=+$("vMet").value; met.connect(MTS.out); pat=ctx.createGain(); pat.gain.value=+$("vPat").value; pat.connect(MTS.out); drm=ctx.createGain(); drm.gain.value=+$("vDrum").value; drm.connect(MTS.out);
-  playing=true; bar=0; pos=0; rep=0; vis=[]; next=ctx.currentTime+0.12; $("play").textContent="Stop"; MTS.wantAwake=true; MTS.keepAwake(true); tickSched(); timer=setInterval(tickSched,25); loop(); }
+  softBus=ctx.createBiquadFilter(); softBus.type="lowpass"; softBus.frequency.value=6500; softBus.Q.value=0.5; const sh=ctx.createBiquadFilter(); sh.type="peaking"; sh.frequency.value=180; sh.gain.value=-3; softBus.connect(sh); sh.connect(drm);
+  playing=true; bar=0; b0=0; pos=0; rep=0; vis=[]; next=ctx.currentTime+0.12; $("play").textContent="Stop"; MTS.wantAwake=true; MTS.keepAwake(true); tickSched(); timer=setInterval(tickSched,25); loop(); }
 function stop(){ playing=false; clearInterval(timer); cancelAnimationFrame(raf); met.disconnect(); pat.disconnect(); drm.disconnect(); MTS.wantAwake=false; MTS.keepAwake(false);
   $("play").textContent="Play"; $("status").textContent="Bar –"; document.querySelectorAll(".cell.now").forEach(x=>x.classList.remove("now")); }
 $("play").addEventListener("click",()=>playing?stop():start());
 $("randPat").addEventListener("click",()=>{ randPattern(); $("a").dispatchEvent(new Event("change")); });
 $("avoid").addEventListener("change",()=>{ avoidFix(); label(); });
-for(const id of ["mode","a","as","b","bs","sub"]) $(id).addEventListener("change",()=>{ avoidFix(); label(); newTune(); if(playing){ /* restart pattern cleanly at the next bar */ pos=0; rep=0; bar=Math.ceil(bar/cycleBars())*cycleBars(); } });
-function formHint(){ const m=$("pitch").value; $("formHint").textContent=
-  m==="retro"?"Each loop, the tune alternates with itself backwards.":
-  m==="inv"?"Each loop, the tune alternates with its upside-down version (intervals flipped around the first note).":
-  m==="all4"?"Four passes in turn: the tune, backwards, upside down, then backwards and upside down.":
-  m==="seq"?"The tune moves up by the interval each loop until it would pass the highest note, then moves down the same way to the lowest note, and back.":
-  m==="motif"?"A random tune fitted to the pattern's notes, repeated so you can learn it.":""; $("newTune").hidden=!["motif","retro","inv","all4","seq"].includes(m);
-  $("everyBox").hidden=!["retro","inv","all4","seq"].includes(m); document.querySelectorAll(".seqOnly").forEach(x=>x.hidden=m!=="seq"); }
+for(const id of ["mode","a","as","b","bs","sub"]) $(id).addEventListener("change",()=>{ avoidFix(); label(); newTune(); if(playing){ /* restart pattern cleanly at the next bar */ pos=0; rep=0; b0=bar; } });
+function formHint(){ const R=on("tRetro"), I=on("tInv"), M=on("tMove"), parts=[];
+  if(R&&I) parts.push("four passes in turn: tune, backwards, upside down, backwards and upside down");
+  else if(R) parts.push("every other time it plays backwards"); else if(I) parts.push("every other time it plays upside down (intervals flipped around the first note)");
+  if(M) parts.push("it moves up by the interval each time until it would pass the highest note, then down to the lowest, and back");
+  $("formHint").textContent=parts.length?"Each time round, "+parts.join("; and ")+".":(($("pitch").value==="motif")?"A random tune fitted to the pattern's notes, repeated so you can learn it. Use the buttons above to change it each time round.":"");
+  $("everyBox").hidden=!(R||I||M); document.querySelectorAll(".seqOnly").forEach(x=>x.hidden=!M); $("newTune").hidden=$("pitch").value!=="motif"; }
+for(const id of ["tRetro","tInv","tMove"]) $(id).addEventListener("click",()=>{ $(id).setAttribute("aria-pressed",String(!on(id))); formHint(); });
+$("timbre").addEventListener("change",e=>{ TIMBRE.kind=e.target.value; });
 $("pitch").addEventListener("change",formHint); $("scale").addEventListener("change",newTune); $("newTune").addEventListener("click",newTune); formHint(); newTune();
 $("tempo").addEventListener("input",e=>$("tempoV").textContent=e.target.value);
 $("vMet").addEventListener("input",e=>{ if(met) met.gain.setTargetAtTime(+e.target.value,ctx.currentTime,0.03); });
