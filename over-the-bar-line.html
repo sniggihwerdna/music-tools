@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Music Tools">
+<meta name="theme-color" content="#23675B">
+<title>Over the Bar Line</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* One card: the groove display (meter, beat boxes, current chord), then settings */
+:root{
+  --bg:#F2F4F6; --surface:#FFFFFF; --fg:#16202A; --muted:#5B6875; --line:#D6DDE4;
+  --accent:#23675B; --accent-fg:#FFFFFF; --brass:#B9812A; --chip:#E7ECF0;
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"Instrument Sans", "Helvetica Neue", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0F1418; --surface:#172027; --fg:#E5EAEE; --muted:#92A0AC; --line:#2A353F;
+  --accent:#5FB3A3; --accent-fg:#0C1A17; --brass:#E2B157; --chip:#212C35; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0F1418; --surface:#172027; --fg:#E5EAEE; --muted:#92A0AC; --line:#2A353F;
+  --accent:#5FB3A3; --accent-fg:#0C1A17; --brass:#E2B157; --chip:#212C35; color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;margin:0;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,6vw,36px);line-height:1.05;margin:0;letter-spacing:-.01em}
+.ver{font:600 12px var(--mono);color:var(--muted);vertical-align:middle;border:1px solid var(--line);border-radius:6px;padding:2px 6px}
+.sub{color:var(--muted);margin:4px 0 0;max-width:60ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:14px}
+button{font:600 15px/1 var(--body);border-radius:999px;padding:11px 18px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;min-height:44px}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-size:18px;padding:14px 28px;min-width:8em}
+button:disabled{opacity:.45}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+select{font:500 16px var(--body);padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);width:100%;min-height:42px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.stage{display:grid;grid-template-columns:auto 1fr;gap:16px 20px;align-items:center}
+.ts{display:flex;flex-direction:column;align-items:center;font-family:var(--display);font-weight:700;line-height:.9}
+.ts b{font-size:44px}
+.ts i{font-style:normal;font:600 13px var(--mono);color:var(--muted);margin-top:6px}
+.beats{display:flex;gap:6px}
+.grp{display:flex;gap:6px;padding:5px;border-radius:12px;background:var(--chip)}
+.beat{width:clamp(34px,10vw,52px);height:clamp(34px,10vw,52px);border-radius:9px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;font:600 16px var(--mono);color:var(--muted);transition:background .05s}
+.beat.gs{color:var(--fg);font-weight:700}
+.beat.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.beat.on.one{background:var(--brass);border-color:var(--brass);color:#1A1206}
+.info{grid-column:1/-1;font-family:var(--display);font-weight:700;font-size:22px;min-height:1.2em}
+.info.mute{color:var(--brass)}
+.now{font-family:var(--display);font-weight:700;font-size:clamp(34px,10vw,56px);line-height:1}
+.next{font:500 15px var(--body);color:var(--muted)}
+.next b{color:var(--fg)}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.status{font:500 13px var(--mono);color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:12px}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f label{font-size:12.5px;color:var(--muted);font-weight:500}
+.f label b{color:var(--fg)}
+h2{font-family:var(--display);font-weight:700;font-size:16px;margin:0}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+.bars{display:flex;flex-direction:column;gap:8px}
+.barRow{display:flex;align-items:center;gap:8px}
+.barRow > span{font:600 12px var(--mono);color:var(--muted);width:22px;flex:none}
+.cells{display:grid;gap:3px;flex:1}
+.cell{height:30px;border-radius:5px;background:var(--chip);position:relative}
+.cell.beat{box-shadow:inset 3px 0 0 var(--line)}
+.cell.note{background:color-mix(in oklab,var(--accent) 45%,var(--chip))}
+.cell.note.first{background:var(--accent)}
+.cell.now{outline:2px solid var(--brass);outline-offset:-2px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+.pat{font-family:var(--display);font-weight:700;font-size:22px}
+.pat small{display:block;font:500 13px var(--body);color:var(--muted);margin-top:4px}
+label.check{display:flex;gap:10px;align-items:center;font-size:14px}
+label.check input{width:20px;height:20px;accent-color:var(--accent)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <a href="./" style="display:inline-block;margin:0 0 10px;font:600 14px system-ui,-apple-system,sans-serif;color:#23675B;text-decoration:none">&lsaquo; All tools</a>
+
+  <header>
+    <h1>Over the Bar Line <span class="ver">v4</span></h1>
+    <p class="sub">A steady 4/4 metronome with a grouping pattern played against it as digital boops, over an optional simple drum loop. Groups of notes with a space after each keep sliding across the bar line until they line up again.</p>
+  </header>
+  <section class="card">
+    <div class="pat" id="patName">3 + space<small id="patInfo"></small></div>
+    <div class="bars" id="bars"></div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>group start</span><span><i style="background:color-mix(in oklab,var(--accent) 45%,var(--chip))"></i>note</span><span><i style="background:var(--chip)"></i>space</span></div>
+    <div class="controls"><button id="play" class="primary" type="button">Play</button><span class="status" id="status">Bar –</span></div>
+  </section>
+  <section class="card">
+    <div class="grid">
+      <div class="f"><label for="mode">Pattern</label>
+        <select id="mode"><option value="simple">Simple: notes + space</option><option value="compound" selected>Compound: notes + space, notes + space</option></select></div>
+      <div class="f"><label for="a">Notes</label><select id="a"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select></div>
+      <div class="f"><label for="as">Space</label><select id="as"><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+      <div class="f cmp"><label for="b">Then notes</label><select id="b"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select></div>
+      <div class="f cmp"><label for="bs">Then space</label><select id="bs"><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+      <div class="f"><label for="sub">Note value</label>
+        <select id="sub"><option value="2" selected>Eighth notes</option><option value="4">Sixteenth notes</option><option value="3">Triplet eighths</option><option value="1">Quarter notes</option></select></div>
+      <div class="f"><label for="tempo">Tempo: <b id="tempoV">90</b> bpm</label><input id="tempo" type="range" min="40" max="200" step="1" value="90"></div>
+      <div class="f"><label for="vMet">Metronome</label><input id="vMet" type="range" min="0" max="1" step="0.05" value="0.7"></div>
+      <div class="f"><label for="vPat">Pattern</label><input id="vPat" type="range" min="0" max="1" step="0.05" value="0.8"></div>
+      <div class="f"><label for="drums">Drum loop</label>
+        <select id="drums"><option value="off">Off</option><option value="0.5" selected>Straight</option><option value="0.6">Slight swing</option><option value="0.66">Swing</option></select></div>
+      <div class="f"><label for="vDrum">Drums</label><input id="vDrum" type="range" min="0" max="1" step="0.05" value="0.7"></div>
+    </div>
+    <div class="grid">
+      <div class="f"><label for="pitch">Boop pitches</label>
+        <select id="pitch">
+          <option value="single" selected>Single note</option>
+          <option value="rand">Random every note</option>
+          <option value="motif">Random tune (repeats)</option>
+          <option value="up">Ascending in each group</option>
+          <option value="down">Descending in each group</option>
+          <option value="updown">Up, then down (alternating groups)</option>
+          <option value="retro">Tune, then retrograde</option>
+          <option value="inv">Tune, then inversion</option>
+          <option value="all4">Tune → retrograde → inversion → retro-inversion</option>
+          <option value="seq">Tune, moved by an interval each loop (up to the top, then down)</option>
+        </select></div>
+      <div class="f"><label for="scale">Scale</label>
+        <select id="scale"><option value="pent" selected>Major pentatonic</option><option value="maj">Major</option><option value="min">Natural minor</option><option value="chr">Chromatic</option></select></div>
+      <div class="f" id="everyBox"><label for="every">Change after</label>
+        <select id="every"><option value="cycle" selected>Each full loop (back to beat 1)</option><option value="rep">Each time the pattern repeats</option></select></div>
+      <div class="f seqOnly"><label for="ivl">Interval</label>
+        <select id="ivl"><option value="1">Half step</option><option value="2" selected>Whole step</option><option value="3">Minor 3rd</option><option value="4">Major 3rd</option><option value="5">4th</option><option value="7">5th</option></select></div>
+      <div class="f seqOnly"><label for="lo">Lowest note</label><select id="lo"><option value="55">G3</option><option value="57">A3</option><option value="60" selected>C4</option><option value="62">D4</option><option value="64">E4</option><option value="65">F4</option><option value="67">G4</option><option value="69">A4</option><option value="72">C5</option><option value="74">D5</option><option value="76">E5</option><option value="77">F5</option><option value="79">G5</option><option value="81">A5</option><option value="84">C6</option><option value="86">D6</option><option value="88">E6</option><option value="91">G6</option><option value="96">C7</option></select></div>
+      <div class="f seqOnly"><label for="hi">Highest note</label><select id="hi"><option value="55">G3</option><option value="57">A3</option><option value="60">C4</option><option value="62">D4</option><option value="64">E4</option><option value="65">F4</option><option value="67">G4</option><option value="69">A4</option><option value="72">C5</option><option value="74">D5</option><option value="76">E5</option><option value="77">F5</option><option value="79">G5</option><option value="81">A5</option><option value="84" selected>C6</option><option value="86">D6</option><option value="88">E6</option><option value="91">G6</option><option value="96">C7</option></select></div>
+      <div class="f"><label>&nbsp;</label><button id="newTune" type="button">New tune</button></div>
+    </div>
+    <p class="hint" id="formHint"></p>
+    <div class="controls"><button id="randPat" type="button">Random pattern</button></div>
+    <label class="check"><input id="avoid" type="checkbox" checked> Avoid patterns that fit evenly in a bar (4, 8, 12 or 16 long)</label>
+    <p class="hint" id="avoidNote" hidden></p>
+    <label class="check"><input id="alt" type="checkbox"> Pattern drops out every other cycle (you play it)</label>
+    <p class="hint">The metronome clicks every beat with a stronger click on 1. Swing moves every off-beat eighth (drums, and the pattern when it is in eighths). The pattern restarts with the metronome only when it has come back round to beat 1. Changes apply at the next bar.</p>
+  </section>
+</div>
+<script src="sounds.js"></script>
+<script>
+(() => {
+const $=id=>document.getElementById(id);
+const LOOKAHEAD=()=>document.hidden?8:0.25;
+// unpitched clicks made from filtered noise: "tick" (metronome) and "tok" (pattern, lower and woodier)
+let noiseBuf=null;
+function noiseInit(ctx){ if(noiseBuf) return; const n=ctx.sampleRate; noiseBuf=ctx.createBuffer(1,n,n); const d=noiseBuf.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; }
+function burst(ctx,dest,t,f,q,peak,dec){ const s=ctx.createBufferSource(); s.buffer=noiseBuf; const bp=ctx.createBiquadFilter(), g=ctx.createGain();
+  bp.type="bandpass"; bp.frequency.value=f; bp.Q.value=q; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(peak,t+0.001); g.gain.exponentialRampToValueAtTime(0.0001,t+dec);
+  s.connect(bp); bp.connect(g); g.connect(dest); s.start(t,Math.random()*0.8); s.stop(t+dec+0.02); }
+const METRO={kind:"wood",tone:1};
+function sineHit(ctx,dest,t,f0,f1,pk,dec){ const o=ctx.createOscillator(), g=ctx.createGain(); o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dec*0.6);
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(pk,t+0.0015); g.gain.exponentialRampToValueAtTime(0.0001,t+dec); o.connect(g); g.connect(dest); o.start(t); o.stop(t+dec+0.02); }
+function tick(ctx,dest,t,accent){ // metronome click; METRO.kind picks the sound, METRO.tone (0.5–2) shifts its pitch
+  const k=METRO.kind, tn=METRO.tone, a=accent?1:0;
+  if(k==="wood"){ const f=(a?1300:950)*tn;
+    sineHit(ctx,dest,t,f,f*0.93,a?0.55:0.4,0.07); sineHit(ctx,dest,t,f*2.71,f*2.6,a?0.16:0.12,0.025);
+    burst(ctx,dest,t,f*2.2,1.2,a?0.5:0.33,0.012); sineHit(ctx,dest,t,170*tn,95*tn,a?0.45:0.28,0.05); }
+  else if(k==="beep"){ const o=ctx.createOscillator(), lp=ctx.createBiquadFilter(), g=ctx.createGain(); o.type="square"; o.frequency.value=(a?1760:1320)*tn; lp.type="lowpass"; lp.frequency.value=5000;
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(a?0.55:0.4,t+0.001); g.gain.setValueAtTime(a?0.55:0.4,t+0.018); g.gain.exponentialRampToValueAtTime(0.0001,t+0.035);
+    o.connect(lp); lp.connect(g); g.connect(dest); o.start(t); o.stop(t+0.05); }
+  else if(k==="rim"){ burst(ctx,dest,t,1800*tn,4,a?2.0:1.4,0.04); burst(ctx,dest,t,5000*tn,1,a?0.5:0.3,0.015); sineHit(ctx,dest,t,420*tn,380*tn,a?0.35:0.25,0.03); }
+  else { burst(ctx,dest,t,a?2600:3800,1.2,a?1.4:0.8,a?0.035:0.022); if(a) burst(ctx,dest,t,1200,0.9,0.5,0.03); } }
+function tok(ctx,dest,t,accent,f){ // digital boop; group starts are louder
+  f=f||740; const o=ctx.createOscillator(), o2=ctx.createOscillator(), lp=ctx.createBiquadFilter(), g=ctx.createGain();
+  o.type="square"; o2.type="sine"; o.frequency.value=f; o2.frequency.value=f; lp.type="lowpass"; lp.frequency.value=Math.max(2200,f*3); lp.Q.value=2;
+  const m=ctx.createGain(); m.gain.value=0.35; o.connect(m); m.connect(lp); o2.connect(lp); lp.connect(g);
+  const pk=accent?0.5:0.3; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(pk,t+0.004); g.gain.setValueAtTime(pk,t+0.03); g.gain.exponentialRampToValueAtTime(0.0001,t+0.11);
+  g.connect(dest); o.start(t); o2.start(t); o.stop(t+0.13); o2.stop(t+0.13); }
+
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+function pattern(){ const a=+$("a").value, as=+$("as").value; const p=[]; const add=(n,s)=>{ for(let i=0;i<n;i++) p.push(i===0?2:1); for(let i=0;i<s;i++) p.push(0); };
+  add(a,as); if($("mode").value==="compound") add(+$("b").value,+$("bs").value); return p; }
+function cycleBars(){ const p=pattern().length, bar=4*+$("sub").value; return p*bar/gcd(p,bar)/bar; }
+function avoidFix(){ $("avoidNote").hidden=true; if(!$("avoid").checked) return; const L=pattern().length; if(L%4) return;
+  const id=$("mode").value==="compound"?"bs":"as", el=$(id), v=+el.value; el.value=String(v<4?v+1:v-1);
+  $("avoidNote").textContent="That pattern was "+L+" long, so it would line up with every bar; I changed a space to make it "+pattern().length+". Untick the box to allow it."; $("avoidNote").hidden=false; }
+function randPattern(){ const cmp=$("mode").value==="compound"; let tries=0;
+  do{ $("a").value=String(1+Math.floor(Math.random()*5)); $("as").value=String(1+Math.floor(Math.random()*2)); if(cmp){ $("b").value=String(1+Math.floor(Math.random()*5)); $("bs").value=String(1+Math.floor(Math.random()*2)); } tries++; }
+  while(tries<50 && $("avoid").checked && pattern().length%4===0); }
+function label(){ const cmp=$("mode").value==="compound"; const sp=n=>n===1?"space":n+" spaces";
+  $("patName").firstChild.textContent=$("a").value+" + "+sp(+$("as").value)+(cmp?", "+$("b").value+" + "+sp(+$("bs").value):"");
+  const L=pattern().length, cb=cycleBars(); $("patInfo").textContent="repeats every "+L+" · lines up again after "+cb+" bar"+(cb>1?"s":"");
+  document.querySelectorAll(".cmp").forEach(x=>x.hidden=!cmp); drawBars(); }
+let shownOff=0;
+function drawBars(){ const sub=+$("sub").value, per=4*sub, p=pattern(), cb=Math.min(cycleBars(),8), box=$("bars"); box.textContent="";
+  for(let b=0;b<cb;b++){ const row=document.createElement("div"); row.className="barRow"; const lab=document.createElement("span"); lab.textContent=b+1; row.appendChild(lab);
+    const cells=document.createElement("div"); cells.className="cells"; cells.style.gridTemplateColumns="repeat("+per+",1fr)";
+    for(let i=0;i<per;i++){ const v=p[(b*per+i)%p.length], c=document.createElement("div"); c.className="cell"+(i%sub===0?" beat":"")+(v?" note":"")+(v===2?" first":""); c.id="c"+b+"_"+i; cells.appendChild(c); }
+    row.appendChild(cells); box.appendChild(row); }
+  if(cycleBars()>8){ const n=document.createElement("p"); n.className="hint"; n.textContent="Showing the first 8 of "+cycleBars()+" bars."; box.appendChild(n); } }
+// ---------- boop pitches ----------
+const SCALES={pent:[0,2,4,7,9],maj:[0,2,4,5,7,9,11],min:[0,2,3,5,7,8,10],chr:[0,1,2,3,4,5,6,7,8,9,10,11]};
+const BASE=72; // C5
+function degMidi(d){ const sc=SCALES[$("scale").value], n=sc.length, o=Math.floor(d/n); return BASE+12*o+sc[((d%n)+n)%n]; }
+let tune=[];
+function noteMap(){ const p=pattern(), m=[]; let k=0, gi=-1, ig=0; for(const v of p){ if(v===2){ gi++; ig=0; } if(v){ m.push({k,gi,ig}); k++; ig++; } else m.push(null); } return m; }
+function newTune(){ const n=noteMap().filter(Boolean).length, span=SCALES[$("scale").value].length; tune=[]; let d=0;
+  for(let i=0;i<n;i++){ d=i?Math.max(0,Math.min(span+1,d+[-2,-1,1,2,3,-3][Math.floor(Math.random()*6)])):Math.floor(Math.random()*span); tune.push(d); } }
+function pitchFor(j,rep){ // j = position in pattern, rep = how many times the pattern has gone round
+  const mode=$("pitch").value, nm=noteMap()[j]; if(!nm) return 0;
+  if(mode==="single") return 740;
+  const hz=d=>440*Math.pow(2,(degMidi(d)-69)/12);
+  if(mode==="rand") return hz(Math.floor(Math.random()*SCALES[$("scale").value].length*1.6)-2);
+  if(mode==="up") return hz(nm.ig);
+  if(mode==="down") return hz(4-nm.ig);
+  if(mode==="updown") return hz(nm.gi%2?4-nm.ig:nm.ig);
+  if(tune.length!==noteMap().filter(Boolean).length) newTune();
+  const n=tune.length, u=unitOf(rep), form=formOf(u);
+  const k=(form===1||form===3)?n-1-nm.k:nm.k; let d=tune[k];
+  if(form>=2) d=2*tune[0]-d;
+  if(mode==="seq") return 440*Math.pow(2,(degMidi(d)+seqOffset(u)-69)/12);
+  return hz(d); }
+function unitOf(rr){ if($("every").value!=="cycle") return rr; const L=pattern().length, per=4*+$("sub").value; return Math.floor(rr/(cycleBars()*per/L)); }
+function formOf(u){ const m=$("pitch").value; return m==="retro"?u%2:m==="inv"?(u%2)*2:m==="all4"?u%4:0; }
+function seqOffset(u){ // bounce between the note limits, moving by the interval each loop
+  const ms=tune.map(degMidi), mn=Math.min(...ms), mx=Math.max(...ms), iv=+$("ivl").value;
+  let lo=+$("lo").value-mn, hi=+$("hi").value-mx; if(hi<lo){ const c=Math.round((lo+hi)/2); lo=hi=c; }
+  const steps=Math.floor((hi-lo)/iv); if(!steps) return lo; const s=Math.max(0,Math.min(steps,Math.round((0-lo)/iv)));
+  const x=(s+u)%(2*steps), idx=x<=steps?x:2*steps-x; return lo+idx*iv; }
+function statusTag(rr){ const m=$("pitch").value, u=unitOf(rr);
+  if(m==="seq"){ const o=seqOffset(u); return o===0?"home key":(o>0?"+":"")+o+" semitone"+(Math.abs(o)===1?"":"s"); }
+  return ["retro","inv","all4"].includes(m)?FORMS[formOf(u)]:""; }
+const FORMS=["tune","retrograde","inversion","retro-inversion"];
+let rep=0, drm=null, ctx=null, met=null, pat=null, playing=false, timer=null, raf=0, next=0, bar=0, pos=0, vis=[], cyc=0;
+function schedBar(t0){ const sub=+$("sub").value, per=4*sub, beatLen=60/+$("tempo").value, step=beatLen/sub, p=pattern(), cb=cycleBars();
+  if(pos%p.length===0 && bar% cb===0) pos=0;
+  const L=p.length;
+  const silent=$("alt").checked && Math.floor(bar/cb)%2===1;
+  const dv=$("drums").value, sw=dv==="off"?0.5:+dv, sT=(bt,off)=>t0+bt*beatLen+(off?sw*beatLen:0);
+  for(let i=0;i<4;i++) tick(ctx,met,t0+i*beatLen,i===0);
+  if(dv!=="off"){ for(let i=0;i<4;i++){ MTS.drum("hihat",sT(i,false),i%2?0.45:0.6,drm); MTS.drum("hihat",sT(i,true),0.3,drm); }
+    MTS.drum("kick",sT(0,false),0.9,drm); MTS.drum("kick",sT(2,false),0.75,drm); MTS.drum("kick",sT(2,true),0.35,drm); MTS.drum("snare",sT(1,false),0.6,drm); MTS.drum("snare",sT(3,false),0.65,drm); }
+  for(let i=0;i<per;i++){ const v=p[(pos+i)%p.length]; const tt=sub===2&&i%2===1?t0+Math.floor(i/2)*beatLen+sw*beatLen:t0+i*step; const rr=rep+Math.floor((pos+i)/L); if(v&&!silent) tok(ctx,pat,tt,v===2,pitchFor((pos+i)%L,rr)); vis.push({form:statusTag(rr),t:sub===2&&i%2===1?t0+Math.floor(i/2)*beatLen+sw*beatLen:t0+i*step,cell:(bar%Math.min(cb,8))+"_"+i,bar,show:bar%cb<8,silent}); }
+  rep+=Math.floor((pos+per)/L); pos=(pos+per)%L; bar++; return 4*beatLen; }
+function tickSched(){ while(playing && next<ctx.currentTime+LOOKAHEAD()) next+=schedBar(next); }
+function loop(){ raf=requestAnimationFrame(loop); const now=ctx.currentTime; let cur=null; while(vis.length&&vis[0].t<=now) cur=vis.shift(); if(!cur) return;
+  document.querySelectorAll(".cell.now").forEach(x=>x.classList.remove("now")); if(cur.show){ const c=$("c"+cur.cell); if(c) c.classList.add("now"); }
+  $("status").textContent="Bar "+(cur.bar+1)+(cur.silent?" · your turn":"")+(cur.form?" · "+cur.form:""); }
+async function start(){ await MTS.start(); ctx=MTS.ctx; noiseInit(ctx);
+  met=ctx.createGain(); met.gain.value=+$("vMet").value; met.connect(MTS.out); pat=ctx.createGain(); pat.gain.value=+$("vPat").value; pat.connect(MTS.out); drm=ctx.createGain(); drm.gain.value=+$("vDrum").value; drm.connect(MTS.out);
+  playing=true; bar=0; pos=0; rep=0; vis=[]; next=ctx.currentTime+0.12; $("play").textContent="Stop"; MTS.wantAwake=true; MTS.keepAwake(true); tickSched(); timer=setInterval(tickSched,25); loop(); }
+function stop(){ playing=false; clearInterval(timer); cancelAnimationFrame(raf); met.disconnect(); pat.disconnect(); drm.disconnect(); MTS.wantAwake=false; MTS.keepAwake(false);
+  $("play").textContent="Play"; $("status").textContent="Bar –"; document.querySelectorAll(".cell.now").forEach(x=>x.classList.remove("now")); }
+$("play").addEventListener("click",()=>playing?stop():start());
+$("randPat").addEventListener("click",()=>{ randPattern(); $("a").dispatchEvent(new Event("change")); });
+$("avoid").addEventListener("change",()=>{ avoidFix(); label(); });
+for(const id of ["mode","a","as","b","bs","sub"]) $(id).addEventListener("change",()=>{ avoidFix(); label(); newTune(); if(playing){ /* restart pattern cleanly at the next bar */ pos=0; rep=0; bar=Math.ceil(bar/cycleBars())*cycleBars(); } });
+function formHint(){ const m=$("pitch").value; $("formHint").textContent=
+  m==="retro"?"Each loop, the tune alternates with itself backwards.":
+  m==="inv"?"Each loop, the tune alternates with its upside-down version (intervals flipped around the first note).":
+  m==="all4"?"Four passes in turn: the tune, backwards, upside down, then backwards and upside down.":
+  m==="seq"?"The tune moves up by the interval each loop until it would pass the highest note, then moves down the same way to the lowest note, and back.":
+  m==="motif"?"A random tune fitted to the pattern's notes, repeated so you can learn it.":""; $("newTune").hidden=!["motif","retro","inv","all4","seq"].includes(m);
+  $("everyBox").hidden=!["retro","inv","all4","seq"].includes(m); document.querySelectorAll(".seqOnly").forEach(x=>x.hidden=m!=="seq"); }
+$("pitch").addEventListener("change",formHint); $("scale").addEventListener("change",newTune); $("newTune").addEventListener("click",newTune); formHint(); newTune();
+$("tempo").addEventListener("input",e=>$("tempoV").textContent=e.target.value);
+$("vMet").addEventListener("input",e=>{ if(met) met.gain.setTargetAtTime(+e.target.value,ctx.currentTime,0.03); });
+$("vPat").addEventListener("input",e=>{ if(pat) pat.gain.setTargetAtTime(+e.target.value,ctx.currentTime,0.03); });
+$("vDrum").addEventListener("input",e=>{ if(drm) drm.gain.setTargetAtTime(+e.target.value,ctx.currentTime,0.03); });
+document.addEventListener("visibilitychange",()=>{ if(playing) tickSched(); });
+label();
+})();
+</script>
+
+<script>if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
+</body>
+</html>

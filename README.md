@@ -10,6 +10,9 @@ Tap a link to open the tool. These are the links to share.
 - **5/4 Groove:** https://sniggihwerdna.github.io/music-tools/five-four-groove.html
 - **Vocal Exercise Patterns:** https://sniggihwerdna.github.io/music-tools/vocal-exercise-patterns.html
 - **Wide Interval Trainer:** https://sniggihwerdna.github.io/music-tools/wide-interval-trainer.html
+- **Tempo Drift:** https://sniggihwerdna.github.io/music-tools/tempo-drift.html
+- **Over the Bar Line:** https://sniggihwerdna.github.io/music-tools/over-the-bar-line.html
+- **Irrational Meters:** https://sniggihwerdna.github.io/music-tools/irrational-meters.html
 - **Rhythm Trainer:** https://sniggihwerdna.github.io/music-tools/rhythm-trainer.html
 - **Advanced Tempo Trainer (Higgins model):** https://sniggihwerdna.github.io/music-tools/advanced-tempo-trainer.html
 - **Odd Meter Trainer:** https://sniggihwerdna.github.io/music-tools/odd-meter-trainer.html

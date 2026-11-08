@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Music Tools">
+<meta name="theme-color" content="#23675B">
+<title>Tempo Drift</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* One card: the groove display (meter, beat boxes, current chord), then settings */
+:root{
+  --bg:#F2F4F6; --surface:#FFFFFF; --fg:#16202A; --muted:#5B6875; --line:#D6DDE4;
+  --accent:#23675B; --accent-fg:#FFFFFF; --brass:#B9812A; --chip:#E7ECF0;
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"Instrument Sans", "Helvetica Neue", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0F1418; --surface:#172027; --fg:#E5EAEE; --muted:#92A0AC; --line:#2A353F;
+  --accent:#5FB3A3; --accent-fg:#0C1A17; --brass:#E2B157; --chip:#212C35; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0F1418; --surface:#172027; --fg:#E5EAEE; --muted:#92A0AC; --line:#2A353F;
+  --accent:#5FB3A3; --accent-fg:#0C1A17; --brass:#E2B157; --chip:#212C35; color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;margin:0;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,6vw,36px);line-height:1.05;margin:0;letter-spacing:-.01em}
+.ver{font:600 12px var(--mono);color:var(--muted);vertical-align:middle;border:1px solid var(--line);border-radius:6px;padding:2px 6px}
+.sub{color:var(--muted);margin:4px 0 0;max-width:60ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:14px}
+button{font:600 15px/1 var(--body);border-radius:999px;padding:11px 18px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;min-height:44px}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-size:18px;padding:14px 28px;min-width:8em}
+button:disabled{opacity:.45}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+select{font:500 16px var(--body);padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);width:100%;min-height:42px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.stage{display:grid;grid-template-columns:auto 1fr;gap:16px 20px;align-items:center}
+.ts{display:flex;flex-direction:column;align-items:center;font-family:var(--display);font-weight:700;line-height:.9}
+.ts b{font-size:44px}
+.ts i{font-style:normal;font:600 13px var(--mono);color:var(--muted);margin-top:6px}
+.beats{display:flex;gap:6px}
+.grp{display:flex;gap:6px;padding:5px;border-radius:12px;background:var(--chip)}
+.beat{width:clamp(34px,10vw,52px);height:clamp(34px,10vw,52px);border-radius:9px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;font:600 16px var(--mono);color:var(--muted);transition:background .05s}
+.beat.gs{color:var(--fg);font-weight:700}
+.beat.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.beat.on.one{background:var(--brass);border-color:var(--brass);color:#1A1206}
+.info{grid-column:1/-1;font-family:var(--display);font-weight:700;font-size:22px;min-height:1.2em}
+.info.mute{color:var(--brass)}
+.now{font-family:var(--display);font-weight:700;font-size:clamp(34px,10vw,56px);line-height:1}
+.next{font:500 15px var(--body);color:var(--muted)}
+.next b{color:var(--fg)}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.status{font:500 13px var(--mono);color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:12px}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f label{font-size:12.5px;color:var(--muted);font-weight:500}
+.f label b{color:var(--fg)}
+h2{font-family:var(--display);font-weight:700;font-size:16px;margin:0}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+.big{font-family:var(--display);font-weight:700;font-size:clamp(56px,18vw,96px);line-height:.95;font-variant-numeric:tabular-nums}
+.big small{font:600 16px var(--mono);color:var(--muted);margin-left:6px}
+.dir{font:600 15px var(--body);color:var(--muted)}
+.dir b{color:var(--accent)}
+canvas#graph{display:block;width:100%;height:150px;background:var(--chip);border-radius:12px}
+.dots{display:flex;gap:6px}
+.dots i{width:14px;height:14px;border-radius:50%;background:var(--chip);border:1px solid var(--line)}
+.dots i.on{background:var(--accent);border-color:var(--accent)}
+.dots i.on.one{background:var(--brass);border-color:var(--brass)}
+label.check{display:flex;gap:10px;align-items:center;font-size:14px}
+label.check input{width:20px;height:20px;accent-color:var(--accent)}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+button.mode{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;border-radius:14px;padding:12px;min-height:72px;line-height:1.2}
+button.mode b{font:700 16px var(--display)}
+button.mode span{font:500 12px var(--body);color:var(--muted)}
+button.mode.on{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+button.mode.on span{color:var(--accent-fg);opacity:.85}
+@media (max-width:420px){ .modes{grid-template-columns:1fr} button.mode{min-height:56px} }
+.dirOnly{display:none}
+body.mdir .dirOnly{display:block}
+body.mdir .cycF{display:none!important}
+.jumpOnly{display:none}
+body.jump .jumpOnly{display:grid}
+body.jump p.jumpOnly{display:block}
+body.jump .driftOnly{display:none}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <a href="./" style="display:inline-block;margin:0 0 10px;font:600 14px system-ui,-apple-system,sans-serif;color:#23675B;text-decoration:none">&lsaquo; All tools</a>
+
+  <header>
+    <h1>Tempo Drift <span class="ver">v5</span></h1>
+    <p class="sub">A metronome whose tempo creeps up and down by a small percentage every beat, so you learn to follow a moving pulse. Three modes: a smooth drift up and back, random jumps within a range, or a drift that may reverse every 4 bars.</p>
+  </header>
+  <section class="card">
+    <div class="modes" role="group" aria-label="Mode">
+      <button type="button" class="mode on" data-m="drift"><b>Drift</b><span>Creep up, then back down</span></button>
+      <button type="button" class="mode" data-m="jump"><b>Random jumps</b><span>New tempo in a range</span></button>
+      <button type="button" class="mode" data-m="dir"><b>Random direction</b><span>Every 4 bars: keep going or reverse</span></button>
+    </div>
+    <select id="mode" hidden><option value="drift" selected>drift</option><option value="jump">jump</option><option value="dir">dir</option></select>
+    <div><div class="big" id="bpm">100.0<small>bpm</small></div><div class="dir" id="dir">Ready</div></div>
+    <div class="dots" id="dots"></div>
+    <canvas id="graph" aria-label="Tempo over time"></canvas>
+    <div class="controls"><button id="play" class="primary" type="button">Play</button><span class="status" id="status">Beat –</span></div>
+  </section>
+  <section class="card">
+    <div class="grid jumpOnly">
+      <div class="f"><label for="jLo">Lowest: <b id="jLoV">80</b> bpm</label><input id="jLo" type="range" min="40" max="240" step="1" value="80"></div>
+      <div class="f"><label for="jHi">Highest: <b id="jHiV">120</b> bpm</label><input id="jHi" type="range" min="40" max="240" step="1" value="120"></div>
+      <div class="f"><label for="jEvery">Change every</label>
+        <select id="jEvery"><option value="4">4 clicks</option><option value="8" selected>8 clicks</option><option value="12">12 clicks</option><option value="16">16 clicks</option><option value="32">32 clicks</option></select></div>
+    </div>
+    <div class="grid driftOnly">
+      <div class="f"><label for="start">Starting tempo: <b id="startV">100</b> bpm</label><input id="start" type="range" min="40" max="220" step="1" value="100"></div>
+      <div class="f"><label for="rate">Change per beat: <b id="rateV">0.10%</b></label><input id="rate" type="range" min="0" max="1000" step="1" value="404" aria-label="Change per beat, 0.01% to 3%"></div>
+      <div class="f cycF"><label for="len">Cycle length</label>
+        <select id="len"><option value="16">16 beats</option><option value="32">32 beats</option><option value="64" selected>64 beats</option><option value="128">128 beats</option><option value="256">256 beats</option></select></div>
+      <div class="f cycF"><label for="shape">Shape</label>
+        <select id="shape"><option value="updown" selected>Speed up, then back down</option><option value="downup">Slow down, then back up</option><option value="upjump">Speed up, then jump back</option><option value="downjump">Slow down, then jump back</option></select></div>
+    </div>
+    <div class="grid">
+      <div class="f"><label for="meter">Accent every</label>
+        <select id="meter"><option value="1">No accent</option><option value="2">2 beats</option><option value="3">3 beats</option><option value="4" selected>4 beats</option><option value="5">5 beats</option><option value="6">6 beats</option><option value="7">7 beats</option></select></div>
+      <div class="f"><label for="kind">Click sound</label>
+        <select id="kind"><option value="wood" selected>Woodblock (strong)</option><option value="beep">Electronic beep</option><option value="rim">Rim click</option><option value="soft">Light tick</option></select></div>
+      <div class="f"><label for="tone">Click pitch: <b id="toneV">normal</b></label><input id="tone" type="range" min="-12" max="12" step="1" value="0"></div>
+      <div class="f"><label for="vol">Volume</label><input id="vol" type="range" min="0" max="1.2" step="0.05" value="1"></div>
+    </div>
+    <label class="check driftOnly cycF"><input id="rand" type="checkbox"> Randomizer: each cycle picks a random rate (0.01% up to your setting), shape and length</label>
+    <p class="hint jumpOnly">Each change lands somewhere in your range, at least 3 bpm away from the last tempo. With the accent set to divide evenly (for example accent every 4, change every 8), each change lands on an accented click. Changes to the range apply at the next jump.</p>
+    <p class="hint dirOnly">Tempo changes by your rate every click. Every 4 bars (4 × the accent setting, or 16 clicks with no accent) a coin flip decides: keep going the same way, or reverse.</p>
+    <p class="hint driftOnly cycF">Tempo stays between 30 and 300 bpm; if a drift would go past either, it turns around. Changes apply from the next cycle, except volume.</p>
+  </section>
+</div>
+<script src="sounds.js"></script>
+<script>
+(() => {
+const $=id=>document.getElementById(id);
+const LOOKAHEAD=()=>document.hidden?8:0.25;
+// unpitched clicks made from filtered noise: "tick" (metronome) and "tok" (pattern, lower and woodier)
+let noiseBuf=null;
+function noiseInit(ctx){ if(noiseBuf) return; const n=ctx.sampleRate; noiseBuf=ctx.createBuffer(1,n,n); const d=noiseBuf.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; }
+function burst(ctx,dest,t,f,q,peak,dec){ const s=ctx.createBufferSource(); s.buffer=noiseBuf; const bp=ctx.createBiquadFilter(), g=ctx.createGain();
+  bp.type="bandpass"; bp.frequency.value=f; bp.Q.value=q; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(peak,t+0.001); g.gain.exponentialRampToValueAtTime(0.0001,t+dec);
+  s.connect(bp); bp.connect(g); g.connect(dest); s.start(t,Math.random()*0.8); s.stop(t+dec+0.02); }
+const METRO={kind:"wood",tone:1};
+function sineHit(ctx,dest,t,f0,f1,pk,dec){ const o=ctx.createOscillator(), g=ctx.createGain(); o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dec*0.6);
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(pk,t+0.0015); g.gain.exponentialRampToValueAtTime(0.0001,t+dec); o.connect(g); g.connect(dest); o.start(t); o.stop(t+dec+0.02); }
+function tick(ctx,dest,t,accent){ // metronome click; METRO.kind picks the sound, METRO.tone (0.5–2) shifts its pitch
+  const k=METRO.kind, tn=METRO.tone, a=accent?1:0;
+  if(k==="wood"){ const f=(a?1300:950)*tn;
+    sineHit(ctx,dest,t,f,f*0.93,a?0.55:0.4,0.07); sineHit(ctx,dest,t,f*2.71,f*2.6,a?0.16:0.12,0.025);
+    burst(ctx,dest,t,f*2.2,1.2,a?0.5:0.33,0.012); sineHit(ctx,dest,t,170*tn,95*tn,a?0.45:0.28,0.05); }
+  else if(k==="beep"){ const o=ctx.createOscillator(), lp=ctx.createBiquadFilter(), g=ctx.createGain(); o.type="square"; o.frequency.value=(a?1760:1320)*tn; lp.type="lowpass"; lp.frequency.value=5000;
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(a?0.55:0.4,t+0.001); g.gain.setValueAtTime(a?0.55:0.4,t+0.018); g.gain.exponentialRampToValueAtTime(0.0001,t+0.035);
+    o.connect(lp); lp.connect(g); g.connect(dest); o.start(t); o.stop(t+0.05); }
+  else if(k==="rim"){ burst(ctx,dest,t,1800*tn,4,a?2.0:1.4,0.04); burst(ctx,dest,t,5000*tn,1,a?0.5:0.3,0.015); sineHit(ctx,dest,t,420*tn,380*tn,a?0.35:0.25,0.03); }
+  else { burst(ctx,dest,t,a?2600:3800,1.2,a?1.4:0.8,a?0.035:0.022); if(a) burst(ctx,dest,t,1200,0.9,0.5,0.03); } }
+function tok(ctx,dest,t,accent){ burst(ctx,dest,t,750,2.2,accent?2.6:1.6,0.07); burst(ctx,dest,t,1900,1.5,accent?0.7:0.4,0.025); }
+
+let ctx=null, bus=null, playing=false, timer=null, raf=0, next=0, vis=[], hist=[];
+let bpm=100, beat=0, cyc=null;
+// slider is logarithmic: 0.01% at the left, 3% at the right, so small rates are easy to set
+function ratePct(){ const v=0.01*Math.pow(300,+$("rate").value/1000); return v<1?Math.round(v*100)/100:Math.round(v*10)/10; }
+function fmtPct(v){ return v<1?v.toFixed(2):v.toFixed(1); }
+const LENS=[16,32,64,128,256], SHAPES=["updown","downup","upjump","downjump"];
+function newCycle(){ const r=$("rand").checked;
+  const top=ratePct(); cyc={rate:(r?Math.round((0.01+Math.random()*(top-0.01))*100)/100:top)/100,
+       len:r?LENS[Math.floor(Math.random()*LENS.length)]:+$("len").value,
+       shape:r?SHAPES[Math.floor(Math.random()*SHAPES.length)]:$("shape").value, i:0, base:bpm}; }
+let dirSign=1, flips=0;
+const dirSpan=()=>4*Math.max(1,+$("meter").value===1?4:+$("meter").value);
+function jumpTempo(){ let lo=+$("jLo").value, hi=+$("jHi").value; if(hi<lo) [lo,hi]=[hi,lo]; if(hi-lo<6) return lo+Math.random()*(hi-lo);
+  let v, t=0; do{ v=lo+Math.random()*(hi-lo); t++; }while(t<30&&Math.abs(v-bpm)<3); return v; }
+function stepTempo(){ // tempo for the next beat
+  if($("mode").value==="jump"){ if(beat%+$("jEvery").value===0) bpm=Math.round(jumpTempo()); return 0; }
+  if($("mode").value==="dir"){ const span=dirSpan(); if(beat>0&&beat%span===0&&Math.random()<0.5){ dirSign=-dirSign; flips++; }
+    const rt=ratePct()/100; let nb=bpm*(dirSign>0?1+rt:1/(1+rt)); if(nb>300||nb<30){ dirSign=-dirSign; nb=bpm*(dirSign>0?1+rt:1/(1+rt)); } bpm=nb; return dirSign; }
+  const c=cyc, half=c.len/2, up=c.shape.startsWith("up");
+  let dirn;
+  if(c.shape.endsWith("jump")){ dirn=up?1:-1; if(c.i>=c.len){ bpm=c.base; newCycle(); return 0; } }
+  else dirn=(c.i<half?1:-1)*(up?1:-1);
+  if(c.i>=c.len){ newCycle(); return stepTempo(); }
+  let nb=bpm*(dirn>0?1+c.rate:1/(1+c.rate));
+  if(nb>300||nb<30){ if(c.shape.endsWith("jump")) nb=bpm; else { dirn=-dirn; nb=bpm*(dirn>0?1+c.rate:1/(1+c.rate)); c.i=c.len-c.i; } }
+  bpm=nb; c.i++; return dirn; }
+function drawDots(){ const n=+$("meter").value, d=$("dots"); d.textContent=""; for(let i=0;i<Math.max(1,n);i++){ const x=document.createElement("i"); x.id="d"+i; d.appendChild(x); } }
+drawDots();
+function drawGraph(){ const cv=$("graph"), dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=cv.clientHeight; if(!W) return;
+  if(cv.width!==W*dpr){ cv.width=W*dpr; cv.height=H*dpr; } const g=cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W,H);
+  const cs=getComputedStyle(document.documentElement); const pts=hist.slice(-200); if(pts.length<2) return;
+  let lo=Math.min(...pts), hi=Math.max(...pts); if(hi-lo<10){ const m=(hi+lo)/2; lo=m-5; hi=m+5; }
+  const X=i=>i/(200-1)*W, Y=v=>H-10-(v-lo)/(hi-lo)*(H-28);
+  g.fillStyle=cs.getPropertyValue("--muted"); g.font="11px "+cs.getPropertyValue("--mono"); g.fillText(Math.round(hi)+"",6,14); g.fillText(Math.round(lo)+"",6,H-4);
+  g.strokeStyle=cs.getPropertyValue("--accent"); g.lineWidth=2.5; g.beginPath(); pts.forEach((v,i)=>i?g.lineTo(X(i),Y(v)):g.moveTo(X(i),Y(v))); g.stroke();
+  g.fillStyle=cs.getPropertyValue("--brass"); const L=pts.length-1; g.beginPath(); g.arc(X(L),Y(pts[L]),4,0,7); g.fill(); }
+function tickSched(){ while(playing && next<ctx.currentTime+LOOKAHEAD()){
+  const n=+$("meter").value, acc=n>1&&beat%n===0;
+  tick(ctx,bus,next,acc);
+  vis.push({t:next,bpm,beat,dir:cyc.shape,ci:cyc.i,len:cyc.len,rate:cyc.rate,jump:$("mode").value==="jump",every:+$("jEvery").value,dm:$("mode").value==="dir",ds:dirSign,span:dirSpan()});
+  next+=60/bpm; beat++; stepTempo(); } }
+function loop(){ raf=requestAnimationFrame(loop); const now=ctx.currentTime; let cur=null; while(vis.length&&vis[0].t<=now) cur=vis.shift(); if(!cur) return;
+  $("bpm").innerHTML=cur.bpm.toFixed(1)+"<small>bpm</small>"; hist.push(cur.bpm); if(hist.length>400) hist.splice(0,200);
+  const half=cur.len/2, s=cur.dir, goingUp=s.endsWith("jump")?s.startsWith("up"):((cur.ci<half)===s.startsWith("up"));
+  if(cur.dm){ const left=cur.span-(cur.beat%cur.span); $("dir").innerHTML=(cur.ds>0?"Speeding up":"Slowing down")+" · <b>"+fmtPct(ratePct())+"%</b> per beat · coin flip in "+left+" click"+(left===1?"":"s"); }
+  else if(cur.jump){ const left=cur.every-(cur.beat%cur.every); $("dir").innerHTML="Random jumps · next change in <b>"+left+"</b> click"+(left===1?"":"s"); }
+  else $("dir").innerHTML=(goingUp?"Speeding up":"Slowing down")+" · <b>"+fmtPct(cur.rate*100)+"%</b> per beat · beat "+(cur.ci+1)+" of "+cur.len;
+  $("status").textContent="Beat "+(cur.beat+1); const n=Math.max(1,+$("meter").value); document.querySelectorAll("#dots i").forEach(x=>x.classList.remove("on","one"));
+  const d=$("d"+(cur.beat%n)); if(d){ d.classList.add("on"); if(cur.beat%n===0&&n>1) d.classList.add("one"); } drawGraph(); }
+async function start(){ await MTS.start(); ctx=MTS.ctx; noiseInit(ctx);
+  bus=ctx.createGain(); bus.gain.value=+$("vol").value; bus.connect(MTS.out);
+  bpm=$("mode").value==="jump"?Math.round(jumpTempo()):+$("start").value; dirSign=Math.random()<0.5?1:-1; beat=0; hist=[]; vis=[]; newCycle(); playing=true; next=ctx.currentTime+0.12;
+  $("play").textContent="Stop"; MTS.wantAwake=true; MTS.keepAwake(true); tickSched(); timer=setInterval(tickSched,25); loop(); }
+function stop(){ playing=false; clearInterval(timer); cancelAnimationFrame(raf); if(bus) bus.disconnect(); MTS.wantAwake=false; MTS.keepAwake(false);
+  $("play").textContent="Play"; $("dir").textContent="Stopped"; $("status").textContent="Beat –"; }
+$("play").addEventListener("click",()=>playing?stop():start());
+$("start").addEventListener("input",e=>{ $("startV").textContent=e.target.value; if(!playing) $("bpm").innerHTML=(+e.target.value).toFixed(1)+"<small>bpm</small>"; });
+$("rate").addEventListener("input",()=>$("rateV").textContent=fmtPct(ratePct())+"%");
+$("meter").addEventListener("change",drawDots);
+$("kind").addEventListener("change",e=>{ METRO.kind=e.target.value; });
+$("tone").addEventListener("input",e=>{ const v=+e.target.value; METRO.tone=Math.pow(2,v/12); $("toneV").textContent=v===0?"normal":(v>0?"+":"")+v+" semitones"; });
+function modeUI(){ const m=$("mode").value; document.body.classList.toggle("jump",m==="jump"); document.body.classList.toggle("mdir",m==="dir");
+  document.querySelectorAll("button.mode").forEach(b=>{ b.classList.toggle("on",b.dataset.m===m); b.setAttribute("aria-pressed",b.dataset.m===m); }); }
+document.querySelectorAll("button.mode").forEach(b=>b.addEventListener("click",()=>{ $("mode").value=b.dataset.m; $("mode").dispatchEvent(new Event("change")); })); $("mode").addEventListener("change",()=>{ modeUI(); if(playing&&$("mode").value==="drift"){ newCycle(); } }); modeUI();
+$("jLo").addEventListener("input",e=>$("jLoV").textContent=e.target.value); $("jHi").addEventListener("input",e=>$("jHiV").textContent=e.target.value);
+$("vol").addEventListener("input",e=>{ if(bus) bus.gain.setTargetAtTime(+e.target.value,ctx.currentTime,0.03); });
+document.addEventListener("visibilitychange",()=>{ if(playing) tickSched(); });
+window.addEventListener("resize",drawGraph);
+})();
+</script>
+
+<script>if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
+</body>
+</html>
