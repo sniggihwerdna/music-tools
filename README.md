@@ -2,7 +2,7 @@
 
 Tap a link to open the tool. These are the links to share.
 
-- **All tools:** https://sniggihwerdna.github.io/music-tools/
+- **All tools:** https://sniggihwerdna.github.io/music-tools/ (tap a folder to see its tools)
 
 ### Odd meters
 - **Odd Meter Trainer:** https://sniggihwerdna.github.io/music-tools/odd-meters/odd-meter-trainer.html
@@ -36,8 +36,8 @@ Old links (like `.../music-tools/tempo-drift.html`) still work: each old file is
 
 ```
 music-tools/
-├── index.html              home page, one section per folder
-├── odd-meters/
+├── index.html              home page: one icon per folder
+├── odd-meters/             each folder has its own index.html menu
 ├── time-trainers/
 ├── vocal-exercises/
 ├── sound-organization/
@@ -51,8 +51,8 @@ music-tools/
 ## To add a new tool
 
 1. Upload its `.html` file into the right folder.
-2. Inside a folder, links to the shared files go up one level: `../sounds.js`, `../manifest.webmanifest`, `../icon-180.png`, `navigator.serviceWorker.register("../sw.js")`, and `href="../"` for the link home.
-3. Add a card for it under the right heading in `index.html`, and a line in the list above.
+2. Inside a folder, links to the shared files go up one level: `../sounds.js`, `../manifest.webmanifest`, `../icon-180.png`, `navigator.serviceWorker.register("../sw.js")`. The back link is `href="./"`, which goes to the folder's menu.
+3. Add a card for it in that folder's `index.html`, update the tool count on its icon in the main `index.html`, and add a line in the list above.
 4. In `sw.js`, add its path (for example `"odd-meters/new-tool.html"`) to `FILES` and bump `VERSION`, so phones pick it up.
 
 Sounds (in the `sounds` folder): piano from the Salamander Grand Piano by Alexander Holm (CC-BY 3.0);

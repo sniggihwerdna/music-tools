@@ -24,34 +24,28 @@ a.tool b{display:block;font-size:19px;color:var(--accent)}
 a.tool span{color:var(--muted);font-size:14.5px}
 h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:22px 0 0;font-weight:600}
 h2:first-of-type{margin-top:8px}
+
+a.back{display:inline-block;margin:0 0 4px;font-weight:600;font-size:14px;color:var(--accent);text-decoration:none}
+a.folder{display:flex;gap:16px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;color:inherit;text-decoration:none}
+a.folder:hover,a.folder:focus-visible{border-color:var(--accent);outline:none}
+a.folder .ic{flex:none;width:64px;height:64px;border-radius:16px;background:var(--accent);display:grid;place-items:center}
+a.folder svg{width:38px;height:38px;stroke:var(--bg);color:var(--bg)}
+a.folder b{display:block;font-size:20px;color:var(--fg)}
+a.folder span{display:block;color:var(--muted);font-size:14.5px}
+a.folder small{display:block;color:var(--accent);font-size:13px;font-weight:600;margin-top:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
 </style>
 </head>
 <body>
 <main>
   <h1>Music Tools</h1>
-  <h2>Odd meters</h2>
-  <a class="tool" href="odd-meters/odd-meter-trainer.html"><b>Odd Meter Trainer</b><span>Short bars of 3, 4 and 5 combined into cycles like 3+5+4, looped. Highest note on the downbeat, middle on each group start, low on the rest.</span></a>
-  <a class="tool" href="odd-meters/irrational-meters.html"><b>Irrational Meters</b><span>Bars like 5/6, 7/12 and 2/3 (triplet units) chained with ordinary 4/4 and 3/8, over a steady quarter-note guide. Presets, your own sequence, or random.</span></a>
-  <a class="tool" href="odd-meters/five-four-groove.html"><b>5/4 Groove</b><span>A looping 5/4 drum groove: 3+2, 2+3 or 2+2+1, jazz or rock feel, with optional silent bars to test your time.</span></a>
-  <a class="tool" href="odd-meters/odd-grooves.html"><b>Odd Grooves</b><span>Light electronic grooves in 9/8, 5/4, 11/8, 13/8 and 15/8: pads, plucks, bass and shaker, with a choice of groupings.</span></a>
-  <a class="tool" href="odd-meters/over-the-bar-line.html"><b>Over the Bar Line</b><span>A steady 4/4 click with a grouping pattern (notes + space, or two of them) sliding across the bar lines until they line up again.</span></a>
-  <h2>Time trainers</h2>
-  <a class="tool" href="time-trainers/rhythm-trainer.html"><b>Rhythm Trainer</b><span>A random rhythm over a metronome, then rest bars to play it back. Loops the same rhythm.</span></a>
-  <a class="tool" href="time-trainers/advanced-tempo-trainer.html"><b>Advanced Tempo Trainer (Higgins model)</b><span>A new random rhythm at a new random tempo every round, with rest bars to play it back.</span></a>
-  <a class="tool" href="time-trainers/tempo-drift.html"><b>Tempo Drift</b><span>A metronome that speeds up and slows down by 0.1–3% per beat over a set cycle, with a randomizer and a tempo graph.</span></a>
-  <a class="tool" href="time-trainers/off-grid-rhythm-trainer.html"><b>Off-Grid Rhythm Trainer</b><span>A downbeat plus 2–5 ticks placed between the grid, never on a 16th or a triplet. Metronome or musical mode, random tempos, 1- or 2-bar loops.</span></a>
-  <h2>Vocal exercises</h2>
-  <a class="tool" href="vocal-exercises/audio-mirror.html#quick"><b>Quick Mirror</b><span>Tap to start singing, tap Done. It plays your take back, then records again, over and over.</span></a>
-  <a class="tool" href="vocal-exercises/audio-mirror.html"><b>Audio Mirror</b><span>Sing and hear your take straight back, over and over. Quick mode needs nothing; loop mode sings along with a phrase from a file or the mic.</span></a>
-  <a class="tool" href="vocal-exercises/vocal-exercise-patterns.html"><b>Vocal Exercise Patterns</b><span>A random string of notes (steps up to a major 7th, within an octave) moved up through all 12 keys and back down. Steady tone for singing along.</span></a>
-  <a class="tool" href="vocal-exercises/wide-interval-trainer.html"><b>Wide Interval Trainer</b><span>Random strings of wide leaps (4th and up by default) over two octaves, moved through the keys at a slower tempo.</span></a>
-  <a class="tool" href="vocal-exercises/microtonal-ear-trainer.html"><b>Microtonal Ear Trainer</b><span>Endless random pitches in 12, 24, 36 or 72 notes per octave over a low drone, for unusual intervals. Sine or piano.</span></a>
-  <h2>Sound organization</h2>
-  <a class="tool" href="sound-organization/retrograde-trainer.html"><b>Retrograde Trainer</b><span>A random phrase, 4 clicks, then the same phrase backwards. Test mode gives you a turn to reverse it first. Inversions too.</span></a>
-  <a class="tool" href="sound-organization/inversion-trainer.html"><b>Inversion Trainer</b><span>A random phrase, 4 clicks, then the same phrase upside down. Choose the mirror note; test mode; 12-tone row with its inversion.</span></a>
-  <a class="tool" href="sound-organization/chord-player.html"><b>Chord Player</b><span>Random 7th chords on organ or piano, one per bar over a click. Loop a set, or go endless for sing-along pitch finding.</span></a>
-  <a class="tool" href="sound-organization/call-and-response-improv.html"><b>Call &amp; Response Improv</b><span>A swung phrase of random, never-repeating notes, then the rest of the bar and one more to answer. Slide notes and rhythm from in (scale, swung 8ths) to out (chromatic, off-grid).</span></a>
-  <p class="bundle" style="color:var(--muted);font-size:13px;margin-top:8px">App version 21 · Nov 18, 2026</p>
+  <div class="grid">
+    <a class="folder" href="odd-meters/"><div class="ic"><svg viewBox="0 0 48 48" aria-hidden="true" fill="currentColor" stroke="none"><rect x="6" y="30" width="5" height="12" rx="1.5"/><rect x="14" y="22" width="5" height="20" rx="1.5"/><rect x="22" y="30" width="5" height="12" rx="1.5"/><rect x="30" y="14" width="5" height="28" rx="1.5"/><rect x="38" y="30" width="5" height="12" rx="1.5"/><text x="24" y="11" text-anchor="middle" font-size="10" font-weight="700" font-family="system-ui,sans-serif" stroke="none">5/4</text></svg></div><div><b>Odd Meters</b><span>Odd and irrational meters, grouping across the bar line, and grooves in 5, 9, 11, 13 and 15.</span><small>5 tools ›</small></div></a>
+    <a class="folder" href="time-trainers/"><div class="ic"><svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 6h14l8 36H9z"/><path d="M24 34 32 13"/><circle cx="29.5" cy="19.5" r="3" fill="currentColor"/><path d="M14 34h20"/></svg></div><div><b>Time Trainers</b><span>Rhythms to play back, random and drifting tempos, and off-grid placement.</span><small>4 tools ›</small></div></a>
+    <a class="folder" href="vocal-exercises/"><div class="ic"><svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke-width="3.2" stroke-linecap="round"><rect x="17" y="5" width="14" height="24" rx="7"/><path d="M11 22a13 13 0 0 0 26 0"/><path d="M24 35v8M17 43h14"/></svg></div><div><b>Vocal Exercises</b><span>Sing back, sing along: mirror, patterns through the keys, wide leaps and microtones.</span><small>5 tools ›</small></div></a>
+    <a class="folder" href="sound-organization/"><div class="ic"><svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14h28M28 8l6 6-6 6"/><path d="M42 34H14M20 28l-6 6 6 6"/><circle cx="10" cy="14" r="2.5" fill="currentColor"/><circle cx="38" cy="34" r="2.5" fill="currentColor"/></svg></div><div><b>Sound Organization</b><span>Retrograde and inversion, chords, and call-and-response improvising.</span><small>4 tools ›</small></div></a>
+  </div>
+  <p class="bundle" style="color:var(--muted);font-size:13px;margin-top:8px">App version 22 · Nov 18, 2026</p>
 </main>
 <script>if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
 </body>

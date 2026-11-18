@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Music Tools">
+<meta name="theme-color" content="#23675B">
+<title>Vocal Exercises · Music Tools</title>
+<style>
+:root{--bg:#F2F4F6;--surface:#FFFFFF;--fg:#16202A;--muted:#5B6875;--line:#D6DDE4;--accent:#23675B}
+@media (prefers-color-scheme: dark){:root{--bg:#0F1418;--surface:#172027;--fg:#E5EAEE;--muted:#92A0AC;--line:#2A353F;--accent:#5FB3A3;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Helvetica Neue",sans-serif;padding:28px 16px 48px}
+main{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-size:32px;line-height:1.1;margin:0 0 6px}
+a.tool{display:block;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;color:inherit;text-decoration:none}
+a.tool:hover,a.tool:focus-visible{border-color:var(--accent);outline:none}
+a.tool b{display:block;font-size:19px;color:var(--accent)}
+a.tool span{color:var(--muted);font-size:14.5px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:22px 0 0;font-weight:600}
+h2:first-of-type{margin-top:8px}
+
+a.back{display:inline-block;margin:0 0 4px;font-weight:600;font-size:14px;color:var(--accent);text-decoration:none}
+a.folder{display:flex;gap:16px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;color:inherit;text-decoration:none}
+a.folder:hover,a.folder:focus-visible{border-color:var(--accent);outline:none}
+a.folder .ic{flex:none;width:64px;height:64px;border-radius:16px;background:var(--accent);display:grid;place-items:center}
+a.folder svg{width:38px;height:38px;stroke:var(--bg);color:var(--bg)}
+a.folder b{display:block;font-size:20px;color:var(--fg)}
+a.folder span{display:block;color:var(--muted);font-size:14.5px}
+a.folder small{display:block;color:var(--accent);font-size:13px;font-weight:600;margin-top:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="../">‹ Music Tools</a>
+  <h1>Vocal Exercises</h1>
+  <a class="tool" href="audio-mirror.html#quick"><b>Quick Mirror</b><span>Tap to start singing, tap Done. It plays your take back, then records again, over and over.</span></a>
+  <a class="tool" href="audio-mirror.html"><b>Audio Mirror</b><span>Sing and hear your take straight back, over and over. Quick mode needs nothing; loop mode sings along with a phrase from a file or the mic.</span></a>
+  <a class="tool" href="vocal-exercise-patterns.html"><b>Vocal Exercise Patterns</b><span>A random string of notes (steps up to a major 7th, within an octave) moved up through all 12 keys and back down. Steady tone for singing along.</span></a>
+  <a class="tool" href="wide-interval-trainer.html"><b>Wide Interval Trainer</b><span>Random strings of wide leaps (4th and up by default) over two octaves, moved through the keys at a slower tempo.</span></a>
+  <a class="tool" href="microtonal-ear-trainer.html"><b>Microtonal Ear Trainer</b><span>Endless random pitches in 12, 24, 36 or 72 notes per octave over a low drone, for unusual intervals. Sine or piano.</span></a>
+</main>
+<script>if("serviceWorker" in navigator) navigator.serviceWorker.register("../sw.js").catch(()=>{});</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Music Tools">
+<meta name="theme-color" content="#23675B">
+<title>Odd Meters · Music Tools</title>
+<style>
+:root{--bg:#F2F4F6;--surface:#FFFFFF;--fg:#16202A;--muted:#5B6875;--line:#D6DDE4;--accent:#23675B}
+@media (prefers-color-scheme: dark){:root{--bg:#0F1418;--surface:#172027;--fg:#E5EAEE;--muted:#92A0AC;--line:#2A353F;--accent:#5FB3A3;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Helvetica Neue",sans-serif;padding:28px 16px 48px}
+main{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-size:32px;line-height:1.1;margin:0 0 6px}
+a.tool{display:block;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;color:inherit;text-decoration:none}
+a.tool:hover,a.tool:focus-visible{border-color:var(--accent);outline:none}
+a.tool b{display:block;font-size:19px;color:var(--accent)}
+a.tool span{color:var(--muted);font-size:14.5px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:22px 0 0;font-weight:600}
+h2:first-of-type{margin-top:8px}
+
+a.back{display:inline-block;margin:0 0 4px;font-weight:600;font-size:14px;color:var(--accent);text-decoration:none}
+a.folder{display:flex;gap:16px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;color:inherit;text-decoration:none}
+a.folder:hover,a.folder:focus-visible{border-color:var(--accent);outline:none}
+a.folder .ic{flex:none;width:64px;height:64px;border-radius:16px;background:var(--accent);display:grid;place-items:center}
+a.folder svg{width:38px;height:38px;stroke:var(--bg);color:var(--bg)}
+a.folder b{display:block;font-size:20px;color:var(--fg)}
+a.folder span{display:block;color:var(--muted);font-size:14.5px}
+a.folder small{display:block;color:var(--accent);font-size:13px;font-weight:600;margin-top:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="../">‹ Music Tools</a>
+  <h1>Odd Meters</h1>
+  <a class="tool" href="odd-meter-trainer.html"><b>Odd Meter Trainer</b><span>Short bars of 3, 4 and 5 combined into cycles like 3+5+4, looped. Highest note on the downbeat, middle on each group start, low on the rest.</span></a>
+  <a class="tool" href="irrational-meters.html"><b>Irrational Meters</b><span>Bars like 5/6, 7/12 and 2/3 (triplet units) chained with ordinary 4/4 and 3/8, over a steady quarter-note guide. Presets, your own sequence, or random.</span></a>
+  <a class="tool" href="five-four-groove.html"><b>5/4 Groove</b><span>A looping 5/4 drum groove: 3+2, 2+3 or 2+2+1, jazz or rock feel, with optional silent bars to test your time.</span></a>
+  <a class="tool" href="odd-grooves.html"><b>Odd Grooves</b><span>Light electronic grooves in 9/8, 5/4, 11/8, 13/8 and 15/8: pads, plucks, bass and shaker, with a choice of groupings.</span></a>
+  <a class="tool" href="over-the-bar-line.html"><b>Over the Bar Line</b><span>A steady 4/4 click with a grouping pattern (notes + space, or two of them) sliding across the bar lines until they line up again.</span></a>
+</main>
+<script>if("serviceWorker" in navigator) navigator.serviceWorker.register("../sw.js").catch(()=>{});</script>
+</body>
+</html>
